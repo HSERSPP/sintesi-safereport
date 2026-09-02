@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOMEC Sintesi SafeReport — MS452-01</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --blue:#1a4a7a;--blue-mid:#2563a8;--blue-light:#e8f0fa;--blue-border:#b8cfe8;
+  --accent:#d04a1a;--gray-bg:#f5f6f8;--gray-border:#d0d4da;--gray-mid:#7a8090;
+  --text:#1a1e28;--text-light:#4a5060;--white:#ffffff;
+  --success:#1a7a4a;--success-bg:#e8f5ee;--radius:6px;--radius-lg:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--gray-bg);color:var(--text);font-size:15px;line-height:1.5}
+
+/* HEADER */
+.header{background:var(--white);border-bottom:3px solid var(--blue);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.header-inner{max-width:780px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.header-logo img{height:38px;display:block}
+.header-title .doc-num{font-size:11px;font-weight:600;color:var(--blue-mid);letter-spacing:.05em;text-transform:uppercase}
+.header-title h1{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;text-align:right}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+
+/* COUNTER BADGE */
+.counter-badge{background:var(--blue);color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;white-space:nowrap}
+.counter-badge span{font-size:14px}
+
+/* PROGRESS */
+.progress-bar{background:var(--blue);height:3px;transition:width .4s ease;width:0%}
+
+/* LANG SWITCHER */
+.lang-switcher{display:flex;gap:4px;margin-bottom:8px;justify-content:flex-end}
+.lang-btn{border:1.5px solid var(--gray-border);background:white;border-radius:var(--radius);padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.lang-btn.active{border-color:var(--blue);background:var(--blue-light);color:var(--blue)}
+
+/* DRAFT BANNER */
+.draft-banner{background:#fff8e8;border:1px solid #f0d080;border-radius:var(--radius);padding:8px 14px;font-size:12px;color:#7a4a00;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.draft-banner button{background:none;border:none;color:var(--blue-mid);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline}
+
+/* CONTAINER */
+.container{max-width:780px;margin:0 auto;padding:16px 16px 48px}
+
+/* SECTION */
+.section-header{background:var(--blue);color:white;padding:10px 16px;border-radius:var(--radius) var(--radius) 0 0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-top:16px}
+.section-body{background:var(--white);border:1px solid var(--blue-border);border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);padding:14px;margin-bottom:2px}
+
+/* FORM ELEMENTS */
+.form-row{display:grid;gap:10px;margin-bottom:10px}
+.form-row.cols-2{grid-template-columns:1fr 1fr}
+.form-row.cols-3{grid-template-columns:1fr 1fr 1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:12px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.04em}
+.form-group label .req{color:var(--accent);margin-left:2px}
+input[type=text],input[type=date],input[type=time],input[type=email],input[type=number],select,textarea{border:1.5px solid var(--gray-border);border-radius:var(--radius);padding:9px 12px;font-size:14px;color:var(--text);background:var(--white);width:100%;font-family:inherit;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue-mid);box-shadow:0 0 0 3px rgba(37,99,168,.12)}
+textarea{resize:vertical;min-height:80px}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a8090' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+
+/* EVENT CARDS */
+.event-type-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:4px}
+.event-card{border:2px solid var(--gray-border);border-radius:var(--radius-lg);padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;background:var(--white)}
+.event-card:hover{border-color:var(--blue-mid);transform:translateY(-1px)}
+.event-card.selected{border-color:var(--blue);background:var(--blue-light)}
+.event-card.selected.danger{border-color:var(--accent);background:#fdf2ee}
+.event-card .ev-icon{font-size:26px;margin-bottom:5px}
+.event-card .ev-label{font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.03em}
+.event-card .ev-desc{font-size:11px;color:var(--text-light);margin-top:2px;line-height:1.3}
+.event-card input{display:none}
+
+/* CHECK / SINO */
+.sino-group{display:flex;gap:6px;flex-wrap:wrap}
+.sino-item{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid var(--gray-border);border-radius:20px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.sino-item input{display:none}
+.sino-item.si.selected{border-color:var(--success);background:var(--success-bg);color:var(--success)}
+.sino-item.no.selected{border-color:var(--accent);background:#fdf2ee;color:var(--accent)}
+.sino-item.na.selected{border-color:var(--gray-mid);background:#f0f0f4;color:var(--gray-mid)}
+
+/* CAUSE */
+.cause-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cause-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1.5px solid var(--gray-border);border-radius:var(--radius);cursor:pointer;font-size:13px;transition:all .15s}
+.cause-item:hover{border-color:var(--blue-mid);background:var(--blue-light)}
+.cause-item.selected{border-color:var(--blue);background:var(--blue-light);color:var(--blue);font-weight:600}
+.cause-item .chk-box{width:16px;height:16px;border-radius:3px;border:2px solid var(--gray-border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cause-item.selected .chk-box{border-color:var(--blue);background:var(--blue)}
+.cause-item.selected .chk-box::after{content:"✓";color:white;font-size:11px;font-weight:700}
+
+/* BODY SVG */
+.body-section{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.body-wrap{flex:0 0 auto;text-align:center}
+.body-wrap p{font-size:11px;color:var(--gray-mid);margin-top:5px}
+.body-selected{flex:1;min-width:160px}
+.body-selected h4{font-size:12px;color:var(--blue);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+.body-part-tag{display:inline-block;background:var(--blue-light);color:var(--blue);border:1px solid var(--blue-border);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;margin:3px;cursor:pointer}
+.body-none{font-size:13px;color:var(--gray-mid);font-style:italic}
+#body-svg .bp{cursor:pointer;transition:fill .15s}
+
+/* FOTO UPLOAD */
+.foto-area{border:2px dashed var(--blue-border);border-radius:var(--radius-lg);padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--white);position:relative}
+.foto-area:hover{border-color:var(--blue-mid);background:var(--blue-light)}
+.foto-area.drag-over{border-color:var(--blue);background:var(--blue-light)}
+.foto-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.foto-area .upload-icon{font-size:32px;margin-bottom:8px}
+.foto-area p{font-size:13px;color:var(--text-light)}
+.foto-area .hint{font-size:11px;color:var(--gray-mid);margin-top:4px}
+.foto-previews{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:12px}
+.foto-thumb{position:relative;border-radius:var(--radius);overflow:hidden;aspect-ratio:1;background:#f0f0f4}
+.foto-thumb img{width:100%;height:100%;object-fit:cover}
+.foto-thumb .del-btn{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:22px;height:22px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.foto-count{font-size:12px;color:var(--blue-mid);font-weight:600;margin-top:6px}
+
+/* FIRMA */
+.firma-canvas-wrap{border:1.5px solid var(--gray-border);border-radius:var(--radius);overflow:hidden;background:white;position:relative}
+.firma-canvas-wrap canvas{display:block;width:100%;touch-action:none}
+.firma-tools{display:flex;gap:8px;margin-top:6px;align-items:center}
+.firma-tools button{border:1.5px solid var(--gray-border);background:white;border-radius:var(--radius);padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit}
+.firma-tools button:hover{border-color:var(--blue-mid)}
+.firma-label{font-size:11px;color:var(--gray-mid)}
+
+/* GEO */
+.geo-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.geo-btn{background:var(--blue-light);border:1.5px solid var(--blue-border);color:var(--blue);border-radius:var(--radius);padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit}
+.geo-btn:hover{background:#d0dff5}
+.geo-status{font-size:12px;color:var(--gray-mid);font-style:italic}
+.geo-status.ok{color:var(--success);font-style:normal;font-weight:600}
+
+/* AC */
+.ac-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.ac-row textarea{flex:1;min-height:55px}
+.ac-del{flex-shrink:0;width:32px;height:32px;border:1.5px solid var(--gray-border);border-radius:var(--radius);background:none;cursor:pointer;color:var(--accent);font-size:16px;display:flex;align-items:center;justify-content:center;margin-top:4px}
+.btn-add{background:none;border:1.5px dashed var(--blue-mid);color:var(--blue-mid);border-radius:var(--radius);padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:all .15s;margin-top:4px;font-family:inherit}
+.btn-add:hover{background:var(--blue-light)}
+
+/* INFORTUNI EXTRA */
+.infortuni-extra{display:none;background:#fff8e8;border:1.5px solid #f0d080;border-radius:var(--radius);padding:12px;margin-top:8px}
+.infortuni-extra.show{display:block}
+
+/* FIRMA NOTE */
+.firma-note{background:#fff8e8;border:1px solid #f0d080;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#7a4a00;margin-bottom:12px}
+
+.divider{height:1px;background:var(--gray-border);margin:12px 0}
+
+/* SUBMIT */
+.submit-area{margin-top:20px;text-align:center}
+.btn-submit{background:var(--blue);color:white;border:none;border-radius:var(--radius-lg);padding:14px 44px;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:.03em;transition:all .2s;box-shadow:0 4px 12px rgba(26,74,122,.3);font-family:inherit}
+.btn-submit:hover{background:#163d67;transform:translateY(-1px)}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+/* SUCCESS */
+#success-screen{display:none;text-align:center;padding:40px 20px;background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--blue-border)}
+.success-icon{width:64px;height:64px;background:var(--success-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px}
+#success-screen h2{color:var(--success);font-size:22px;margin-bottom:8px}
+#success-screen p{color:var(--text-light);font-size:14px;margin-bottom:4px}
+.ticket{font-size:12px;color:var(--gray-mid);margin-top:14px;font-family:monospace;background:var(--gray-bg);padding:6px 12px;border-radius:var(--radius);display:inline-block}
+.btn-new{margin-top:16px;background:var(--blue-light);color:var(--blue);border:1.5px solid var(--blue-border);border-radius:var(--radius-lg);padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-pdf{margin-top:10px;background:var(--accent);color:white;border:none;border-radius:var(--radius-lg);padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:block;margin-left:auto;margin-right:auto}
+
+@media(max-width:600px){
+  .form-row.cols-2,.form-row.cols-3{grid-template-columns:1fr}
+  .cause-grid{grid-template-columns:1fr}
+  .event-type-grid{grid-template-columns:1fr 1fr}
+  .header-inner{flex-direction:row;flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <img src="data:image/jpeg;base64,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" alt="Somec Sintesi">
+    </div>
+    <div class="header-right">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="counter-badge" onclick="showCounter()" title="Segnalazioni inviate">
+          📊 <span id="counter-num">0</span> <span data-i18n="segnalazioni">segnalazioni</span>
+        </div>
+        <div class="lang-switcher">
+          <button class="lang-btn active" onclick="setLang('it')">🇮🇹 IT</button>
+          <button class="lang-btn" onclick="setLang('fr')">🇫🇷 FR</button>
+          <button class="lang-btn" onclick="setLang('en')">🇬🇧 EN</button>
+          <button class="lang-btn" onclick="setLang('de')">🇩🇪 DE</button>
+        </div>
+      </div>
+      <div class="header-title">
+        <div class="doc-num">MS452-01 · Rev.02</div>
+        <h1 data-i18n="titolo">Rilevazione e Analisi Incidenti</h1>
+      </div>
+    </div>
+  </div>
+  <div class="progress-bar" id="progress"></div>
+</div>
+
+<div class="container">
+
+<div id="draft-banner" class="draft-banner" style="display:none">
+  📋 <span data-i18n="bozza_trovata">Bozza trovata — vuoi ripristinare i dati precedenti?</span>
+  <div style="display:flex;gap:8px">
+    <button onclick="restoreDraft()" data-i18n="ripristina">Ripristina</button>
+    <button onclick="discardDraft()" data-i18n="ignora">Ignora</button>
+  </div>
+</div>
+
+<form id="main-form" novalidate>
+
+<!-- 1. DATA ORA LUOGO -->
+<div class="section-header">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+  <span>1 — </span><span data-i18n="s1">Data, ora e luogo</span>
+</div>
+<div class="section-body">
+  <div class="form-row cols-3">
+    <div class="form-group"><label data-i18n="data">Data <span class="req">*</span></label><input type="date" id="data" required></div>
+    <div class="form-group"><label data-i18n="ora">Ora <span class="req">*</span></label><input type="time" id="ora" required></div>
+    <div class="form-group">
+      <label data-i18n="cantiere">Cantiere / Sito <span class="req">*</span></label>
+      <select id="cantiere" required onchange="onCantiereSintesiChange(this.value)">
+        <option value="">—</option>
+        <option>Ufficio</option>
+        <option>Magazzino</option>
+        <option>Cantiere Refitting</option>
+      </select>
+      <input type="text" id="cantiere_refitting_nome" class="form-control" style="display:none;margin-top:6px" placeholder="Nome cantiere/nave (es. Refitting MSC Poesia — Marghera)">
+    </div>
+  </div>
+  <script>
+    function onCantiereSintesiChange(val){
+      const f = document.getElementById('cantiere_refitting_nome');
+      f.style.display = (val === 'Cantiere Refitting') ? 'block' : 'none';
+      if (val !== 'Cantiere Refitting') f.value = '';
+    }
+  </script>
+  <script>
+    function getCantiereValue(){
+      const sel = document.getElementById('cantiere').value;
+      if (sel === 'Cantiere Refitting') {
+        const nome = document.getElementById('cantiere_refitting_nome').value.trim();
+        return nome ? ('Cantiere Refitting — ' + nome) : 'Cantiere Refitting';
+      }
+      return sel;
+    }
+  </script>
+  <div class="form-row cols-2">
+    <div class="form-group"><label data-i18n="area">Area / Reparto <span class="req">*</span></label>
+      <select id="area" required>
+        <option value="">— Seleziona —</option>
+        <optgroup label="🏢 Ufficio & Magazzino">
+          <option>UFF — Ufficio</option>
+          <option>MAG — Magazzino (stoccaggio materiali)</option>
+        </optgroup>
+        <optgroup label="🚢 Cantiere Refitting — Bordo nave">
+          <option>Bordo nave (interno)</option>
+          <option>Bordo nave (coperta/deck)</option>
+          <option>Spazi confinati / Doppi fondi</option>
+          <option>Zone in quota / Ponteggi</option>
+        </optgroup>
+        <optgroup label="🚢 Cantiere Refitting — Aree esterne">
+          <option>Banchina</option>
+          <option>Bacino di carenaggio</option>
+          <option>Pontile / Area ormeggio</option>
+          <option>Magazzino cantiere (temporaneo)</option>
+          <option>Piazzale cantiere</option>
+          <option>Area pubblica / condivisa cantiere</option>
+          <option>Uffici cantiere</option>
+        </optgroup>
+        <optgroup label="🚗 Viabilità / Altro">
+          <option>ST — Strada / Itinere</option>
+          <option>Trasversale</option>
+          <option>Altro / Non specificato</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="form-group"><label data-i18n="macchina">Macchina / Attrezzatura / Zona</label><input type="text" id="macchina" placeholder="es. Gruetta, Zona sbarco, Pontile nord..."></div>
+  </div>
+  <!-- GEOLOCALIZZAZIONE -->
+  <div class="form-group">
+    <label data-i18n="geoLabel">📍 Posizione GPS (automatica)</label>
+    <div class="geo-row">
+      <button type="button" class="geo-btn" onclick="getGeo()">📍 <span data-i18n="geoBtn">Rileva posizione</span></button>
+      <span class="geo-status" id="geo-status" data-i18n="geoStatus">Non rilevata</span>
+    </div>
+    <input type="hidden" id="geo-lat"><input type="hidden" id="geo-lng"><input type="hidden" id="geo-acc">
+  </div>
+</div>
+
+<!-- 2. PERSONA -->
+<div class="section-header">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+  <span>2 — </span><span data-i18n="s2">Persona coinvolta</span>
+</div>
+<div class="section-body">
+  <div class="form-row cols-3">
+    <div class="form-group"><label data-i18n="cognome">Cognome <span class="req">*</span></label><input type="text" id="cognome" required></div>
+    <div class="form-group"><label data-i18n="nome">Nome <span class="req">*</span></label><input type="text" id="nome" required></div>
+    <div class="form-group"><label data-i18n="azienda">Azienda <span class="req">*</span></label><input type="text" id="azienda" required></div>
+  </div>
+  <div class="form-row cols-2">
+    <div class="form-group">
+      <label data-i18n="mansione">Mansione <span class="req">*</span></label>
+      <select id="mansione" required>
+        <option value="">— Seleziona —</option>
+        <optgroup label="M1 — Impiegato ufficio">
+          <option>M1 — Impiegato (amministrativo / commerciale)</option>
+          <option>M1 — Impiegato (ufficio tecnico / progettazione)</option>
+          <option>M1 — Impiegato (acquisti / logistica)</option>
+          <option>M1 — Impiegato (post-vendita)</option>
+        </optgroup>
+        <optgroup label="M2 — Impiegato tecnico cantieri">
+          <option>M2a — Responsabile di cantiere</option>
+          <option>M2b — Direttore / Coordinatore cantiere</option>
+          <option>M2c — Project Manager</option>
+          <option>M2d — Controllo qualità cantiere</option>
+          <option>M2f — Site Supervisor / Impiegato tecnico</option>
+        </optgroup>
+        <optgroup label="M5 — Addetto magazzino / logistica">
+          <option>M5a — Carrellista (carrello elevatore)</option>
+          <option>M5c — Magazziniere (con mezzo sollevamento)</option>
+          <option>M5d — Magazziniere (senza mezzo sollevamento)</option>
+        </optgroup>
+        <optgroup label="M6 — Manutentore (trasversale)">
+          <option>M6 — Manutentore</option>
+        </optgroup>
+        <optgroup label="M9 — Addetto refitting in cantiere">
+          <option>M9a — Posatore / addetto refitting (elementi strutturali)</option>
+          <option>M9b — Addetto movimentazione materiali in cantiere</option>
+        </optgroup>
+        <optgroup label="Ruoli trasversali / Altro">
+          <option>Supervisore / Preposto nominato</option>
+          <option>Responsabile HSE / RSPP</option>
+          <option>Visitatore / Ospite</option>
+          <option>Lavoratore di impresa appaltatrice</option>
+          <option>Altro</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="form-group"><label data-i18n="altri">Altre persone presenti</label><input type="text" id="altri"></div>
+  </div>
+</div>
+
+<!-- 3. TIPO EVENTO -->
+<div class="section-header">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  <span>3 — </span><span data-i18n="s3">Tipo di evento</span>
+</div>
+<div class="section-body">
+  <div class="event-type-grid" id="event-type-group">
+    <label class="event-card" onclick="selectEvent(this,'near-miss')">
+      <input type="radio" name="evento" value="near-miss">
+      <div class="ev-icon">⚠️</div>
+      <div class="ev-label" data-i18n="evNearMiss">Near Miss</div>
+      <div class="ev-desc" data-i18n="evNearMissDesc">Successo, nessun ferito</div>
+    </label>
+    <label class="event-card" onclick="selectEvent(this,'pericolosa')">
+      <input type="radio" name="evento" value="pericolosa">
+      <div class="ev-icon">🔍</div>
+      <div class="ev-label" data-i18n="evPericolosa">Situazione pericolosa</div>
+      <div class="ev-desc" data-i18n="evPericolosaDesc">Rischio potenziale</div>
+    </label>
+    <label class="event-card" onclick="selectEvent(this,'emergenza')">
+      <input type="radio" name="evento" value="emergenza">
+      <div class="ev-icon">🔥</div>
+      <div class="ev-label" data-i18n="evEmergenza">Emergenza</div>
+      <div class="ev-desc" data-i18n="evEmergenzaDesc">Es. incendio</div>
+    </label>
+    <label class="event-card" onclick="selectEvent(this,'lesione')">
+      <input type="radio" name="evento" value="lesione">
+      <div class="ev-icon">🩹</div>
+      <div class="ev-label" data-i18n="evLesione">Lesione</div>
+      <div class="ev-desc" data-i18n="evLesioneDesc">Senza lasciare lavoro</div>
+    </label>
+    <label class="event-card danger" onclick="selectEvent(this,'infortunio')">
+      <input type="radio" name="evento" value="infortunio">
+      <div class="ev-icon">🚨</div>
+      <div class="ev-label" data-i18n="evInfortunio">Infortunio</div>
+      <div class="ev-desc" data-i18n="evInfortunioDesc">Con prognosi / PS</div>
+    </label>
+  </div>
+</div>
+
+<!-- 4. DESCRIZIONE -->
+<div class="section-header">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+  <span>4 — </span><span data-i18n="s4">Descrizione dell'accaduto</span>
+</div>
+<div class="section-body">
+  <div class="form-group" style="margin-bottom:12px">
+    <label data-i18n="descrizione">Descrizione <span class="req">*</span></label>
+    <textarea id="descrizione" rows="4" required data-i18n-ph="descrizioneHint"></textarea>
+  </div>
+  <div class="form-row cols-2" style="margin-bottom:12px">
+    <div class="form-group">
+      <label data-i18n="dinamica">Dinamica</label>
+      <select id="dinamica">
+        <option value="">—</option>
+        <optgroup label="Cadute">
+          <option>Caduto da (caduta dall'alto)</option>
+          <option>Caduto in piano</option>
+          <option>Ha messo un piede in fallo</option>
+          <option>Scivolato su pavimento bagnato / olio / trucioli</option>
+        </optgroup>
+        <optgroup label="Urti e contatti">
+          <option>Ha urtato contro</option>
+          <option>Urtato da</option>
+          <option>A contatto con (superficie tagliente / affilata)</option>
+          <option>A contatto con (superficie calda / ustione)</option>
+          <option>Colpito da oggetto in caduta</option>
+          <option>Colpito da proiezione trucioli / schegge</option>
+        </optgroup>
+        <optgroup label="Impigliamenti e schiacciamenti">
+          <option>Impigliato / agganciato (centro di lavoro)</option>
+          <option>Impigliato / agganciato (linea produzione)</option>
+          <option>Schiacciato da (carico in movimentazione)</option>
+          <option>Schiacciato da (materiale in caduta da scaffale)</option>
+          <option>Investito da (carrello elevatore / transpallet)</option>
+        </optgroup>
+        <optgroup label="Agenti fisici / chimici">
+          <option>Ha inalato (polveri / fumi saldatura)</option>
+          <option>Ha inalato (solventi / primer / sigillanti)</option>
+          <option>Esposto a rumore elevato (> 85 dB)</option>
+          <option>Esposto a agente fisico / vibrazione</option>
+          <option>Ha ingerito</option>
+        </optgroup>
+        <optgroup label="Sforzi e movimenti">
+          <option>Movimento scoordinato</option>
+          <option>Ha fatto uno sforzo (movimentazione manuale carichi)</option>
+          <option>Movimentazione manuale lastra vetro / profilo lungo</option>
+        </optgroup>
+        <optgroup label="Altro">
+          <option>Esplosione / scoppio (bombola / area ricarica)</option>
+          <option>Contatto con impianto elettrico</option>
+          <option>Altro</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="form-group"><label data-i18n="dinamicaDet">Specificare</label><input type="text" id="dinamica_det"></div>
+  </div>
+  <div class="divider"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="form-group"><label data-i18n="attOrd">Attività ordinaria?</label>
+      <div class="sino-group">
+        <label class="sino-item si" onclick="toggleSino(this)"><input type="radio" name="attord"> ✓ <span data-i18n="si">Sì</span></label>
+        <label class="sino-item no" onclick="toggleSino(this)"><input type="radio" name="attord"> ✗ <span data-i18n="no">No</span></label>
+        <label class="sino-item na" onclick="toggleSino(this)"><input type="radio" name="attord"><span data-i18n="saltuaria">Saltuaria</span></label>
+      </div>
+    </div>
+    <div class="form-group"><label data-i18n="dpiInd">Indossava i DPI?</label>
+      <div class="sino-group">
+        <label class="sino-item si" onclick="toggleSino(this)"><input type="radio" name="dpi_ind"> ✓ <span data-i18n="si">Sì</span></label>
+        <label class="sino-item no" onclick="toggleSino(this)"><input type="radio" name="dpi_ind"> ✗ <span data-i18n="no">No</span></label>
+        <label class="sino-item na" onclick="toggleSino(this)"><input type="radio" name="dpi_ind"><span data-i18n="np">N/P</span></label>
+      </div>
+    </div>
+    <div class="form-group"><label data-i18n="formSvolta">Formazione svolta?</label>
+      <div class="sino-group">
+        <label class="sino-item si" onclick="toggleSino(this)"><input type="radio" name="form_svolta"> ✓ <span data-i18n="si">Sì</span></label>
+        <label class="sino-item no" onclick="toggleSino(this)"><input type="radio" name="form_svolta"> ✗ <span data-i18n="no">No</span></label>
+        <label class="sino-item na" onclick="toggleSino(this)"><input type="radio" name="form_svolta"><span data-i18n="inCorso">In corso</span></label>
+      </div>
+    </div>
+    <div class="form-group"><label data-i18n="attrConf">Attrezzature conformi?</label>
+      <div class="sino-group">
+        <label class="sino-item si" onclick="toggleSino(this)"><input type="radio" name="attr_conf"> ✓ <span data-i18n="si">Sì</span></label>
+        <label class="sino-item no" onclick="toggleSino(this)"><input type="radio" name="attr_conf"> ✗ <span data-i18n="no">No</span></label>
+        <label class="sino-item na" onclick="toggleSino(this)"><input type="radio" name="attr_conf"><span data-i18n="np">N/P</span></label>
+      </div>
+    </div>
+    <div class="form-group"><label data-i18n="spazi">Spazi adeguati?</label>
+      <div class="sino-group">
+        <label class="sino-item si" onclick="toggleSino(this)"><input type="radio" name="spazi"> ✓ <span data-i18n="si">Sì</span></label>
+        <label class="sino-item no" onclick="toggleSino(this)"><input type="radio" name="spazi"> ✗ <span data-i18n="no">No</span></label>
+        <label class="sino-item na" onclick="toggleSino(this)"><input type="radio" name="spazi"><span data-i18n="riorg">Riorg.</span></label>
+      </div>
+    </div>
+    <div class="form-group"><label data-i18n="procDef">Procedure definite?</label>
+      <div class="sino-group">
+        <label class="sino-item si" onclick="toggleSino(this)"><input type="radio" name="proc_def"> ✓ <span data-i18n="si">Sì</span></label>
+        <label class="sino-item no" onclick="toggleSino(this)"><input type="radio" name="proc_def"> ✗ <span data-i18n="no">No</span></label>
+        <label class="sino-item na" onclick="toggleSino(this)"><input type="radio" name="proc_def"><span data-i18n="cambioOrg">Cambio org.</span></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. CORPO -->
+<div class="section-header">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a3 3 0 100 6 3 3 0 000-6zM5 22v-2a7 7 0 0114 0v2"/></svg>
+  <span>5 — </span><span data-i18n="s5">Dove si è fatto male?</span>
+</div>
+<div class="section-body">
+  <div class="body-section">
+    <div class="body-wrap">
+      <svg id="body-svg" width="110" height="230" viewBox="0 0 120 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g class="bp" id="bp-testa" onclick="toggleBodyPart(this,'Testa')"><ellipse cx="60" cy="22" rx="16" ry="18" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="60" y="26" text-anchor="middle" font-size="9" fill="#1a4a7a">Testa</text></g>
+        <g class="bp" id="bp-collo" onclick="toggleBodyPart(this,'Collo')"><rect x="52" y="38" width="16" height="10" rx="3" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="60" y="46" text-anchor="middle" font-size="8" fill="#1a4a7a">Collo</text></g>
+        <g class="bp" id="bp-torso" onclick="toggleBodyPart(this,'Torso')"><rect x="36" y="48" width="48" height="60" rx="6" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="60" y="82" text-anchor="middle" font-size="9" fill="#1a4a7a">Torso</text></g>
+        <g class="bp" id="bp-braccio-sx" onclick="toggleBodyPart(this,'Braccio destro')"><rect x="18" y="50" width="18" height="44" rx="6" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="27" y="76" text-anchor="middle" font-size="8" fill="#1a4a7a" transform="rotate(-90,27,76)">Br.Sx</text></g>
+        <g class="bp" id="bp-braccio-dx" onclick="toggleBodyPart(this,'Braccio sinistro')"><rect x="84" y="50" width="18" height="44" rx="6" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="93" y="76" text-anchor="middle" font-size="8" fill="#1a4a7a" transform="rotate(90,93,76)">Br.Dx</text></g>
+        <g class="bp" id="bp-mano-sx" onclick="toggleBodyPart(this,'Mano destra')"><ellipse cx="27" cy="103" rx="9" ry="7" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="27" y="106" text-anchor="middle" font-size="8" fill="#1a4a7a">Mn.Sx</text></g>
+        <g class="bp" id="bp-mano-dx" onclick="toggleBodyPart(this,'Mano sinistra')"><ellipse cx="93" cy="103" rx="9" ry="7" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="93" y="106" text-anchor="middle" font-size="8" fill="#1a4a7a">Mn.Dx</text></g>
+        <g class="bp" id="bp-addome" onclick="toggleBodyPart(this,'Addome')"><rect x="36" y="108" width="48" height="32" rx="4" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="60" y="128" text-anchor="middle" font-size="9" fill="#1a4a7a">Addome</text></g>
+        <g class="bp" id="bp-gamba-sx" onclick="toggleBodyPart(this,'Gamba destra')"><rect x="36" y="140" width="22" height="56" rx="6" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="47" y="172" text-anchor="middle" font-size="8" fill="#1a4a7a">Gb.Sx</text></g>
+        <g class="bp" id="bp-gamba-dx" onclick="toggleBodyPart(this,'Gamba sinistra')"><rect x="62" y="140" width="22" height="56" rx="6" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="73" y="172" text-anchor="middle" font-size="8" fill="#1a4a7a">Gb.Dx</text></g>
+        <g class="bp" id="bp-piede-sx" onclick="toggleBodyPart(this,'Piede destro')"><ellipse cx="44" cy="205" rx="12" ry="7" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="44" y="208" text-anchor="middle" font-size="8" fill="#1a4a7a">Pd.Sx</text></g>
+        <g class="bp" id="bp-piede-dx" onclick="toggleBodyPart(this,'Piede sinistro')"><ellipse cx="76" cy="205" rx="12" ry="7" fill="#e8f0fa" stroke="#2563a8" stroke-width="1.5"/><text x="76" y="208" text-anchor="middle" font-size="8" fill="#1a4a7a">Pd.Dx</text></g>
+      </svg>
+      <p data-i18n="cliccaCorpo">Tocca per selezionare</p>
+    </div>
+    <div class="body-selected">
+      <h4 data-i18n="partiSel">Parti selezionate</h4>
+      <div id="body-tags"><span class="body-none" data-i18n="nessunaSel">Nessuna selezione</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. FOTO -->
+<div class="section-header">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M8.5 5l1.5-2h4l1.5 2"/></svg>
+  <span>6 — </span><span data-i18n="s6">Foto allegate</span> <span style="font-weight:400;font-size:10px;opacity:.8;text-transform:none;margin-left:4px" data-i18n="fotoOpt">(opzionale — max 4)</span>
+</div>
+<div class="section-body">
+  <div class="foto-area" id="foto-area">
+    <input type="file" accept="image/*" multiple capture="environment" onchange="handleFotos(this)" id="foto-input">
+    <div class="upload-icon">📸</div>
+    <p data-i18n="fotoHint">Tocca per scattare o scegliere foto</p>
+    <p class="hint" data-i18n="fotoHint2">JPG, PNG — max 4 foto — da fotocamera o galleria</p>
+  </div>
+  <div class="foto-previews" id="foto-previews"></div>
+  <div class="foto-count" id="foto-count"></div>
+</div>
+
+<!-- 7. TRATTAMENTO -->
+<div class="section-header">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+  <span>7 — </span><span data-i18n="s7">Trattamento immediato</span>
+</div>
+<div class="section-body">
+  <div class="form-group" style="margin-bottom:10px">
+    <label data-i18n="trattLabel">Cosa è stato fatto subito</label>
+    <textarea id="trattamento" rows="3" data-i18n-ph="trattHint"></textarea>
+  </div>
+  <div id="infortuni-extra" class="infortuni-extra">
+    <div class="form-row cols-2">
+      <div class="form-group"><label data-i18n="denunciaNum">N° denuncia infortunio</label><input type="text" id="denuncia_num"></div>
+      <div class="form-group"><label data-i18n="prognosi">Giorni di prognosi</label><input type="number" id="prognosi" min="0"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 8. CAUSE -->
+<div class="section-header">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+  <span>8 — </span><span data-i18n="s8">Analisi delle cause</span>
+</div>
+<div class="section-body">
+  <div class="form-group" style="margin-bottom:12px">
+    <label data-i18n="procRisp">Procedure rispettate?</label>
+    <div class="sino-group">
+      <label class="sino-item si" onclick="toggleSino(this)"><input type="radio" name="proc_risp"> ✓ <span data-i18n="si">Sì</span></label>
+      <label class="sino-item no" onclick="toggleSino(this)"><input type="radio" name="proc_risp"> ✗ <span data-i18n="no">No</span></label>
+    </div>
+  </div>
+  <div class="form-group" style="margin-bottom:12px">
+    <label data-i18n="causePrinc">Cause principali</label>
+    <div class="cause-grid">
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c1">Comportamento scorretto</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c2">Mancato utilizzo DPI</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c3">Procedura non seguita</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c4">Formazione insufficiente</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c5">Attrezzatura non conforme</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c6">Manutenzione carente</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c7">Condizioni ambientali</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c8">Interferenza lavoratori</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c9">Stanchezza / distrazione</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c10">Mancata vigilanza preposto</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c11">Procedura non esistente</span></div>
+      <div class="cause-item" onclick="toggleCause(this)"><div class="chk-box"></div><span data-i18n="c12">Causa esterna / terzi</span></div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label data-i18n="ncDesc">NC rilevata — descrizione</label>
+    <textarea id="nc_desc" rows="2" data-i18n-ph="ncHint"></textarea>
+  </div>
+</div>
+
+<!-- 9. AZIONI -->
+<div class="section-header">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+  <span>9 — </span><span data-i18n="s9">Azioni da intraprendere</span>
+</div>
+<div class="section-body">
+  <div id="ac-list">
+    <div class="ac-row"><textarea rows="2" data-i18n-ph="acHint"></textarea><button type="button" class="ac-del" onclick="removeAC(this)">×</button></div>
+  </div>
+  <button type="button" class="btn-add" onclick="addAC()">+ <span data-i18n="aggAC">Aggiungi azione correttiva</span></button>
+  <div class="divider"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+    <div class="form-group"><label data-i18n="dvrAgg">Aggiornamento DVR?</label>
+      <div class="sino-group">
+        <label class="sino-item si" onclick="toggleSino(this)"><input type="radio" name="dvr_agg"> ✓ <span data-i18n="si">Sì</span></label>
+        <label class="sino-item no" onclick="toggleSino(this)"><input type="radio" name="dvr_agg"> ✗ <span data-i18n="no">No</span></label>
+      </div>
+    </div>
+    <div class="form-group"><label data-i18n="peAgg">Aggiorn. piano emergenza?</label>
+      <div class="sino-group">
+        <label class="sino-item si" onclick="toggleSino(this)"><input type="radio" name="pe_agg"> ✓ <span data-i18n="si">Sì</span></label>
+        <label class="sino-item no" onclick="toggleSino(this)"><input type="radio" name="pe_agg"> ✗ <span data-i18n="no">No</span></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 10. FIRME -->
+<div class="section-header">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+  <span>10 — </span><span data-i18n="s10">Responsabili e firme</span>
+</div>
+<div class="section-body">
+  <div class="firma-note" data-i18n="firmaNote">⚠️ Il modulo verrà inviato all'RSPP per validazione e archiviazione.</div>
+  <div class="form-row cols-2">
+    <div class="form-group"><label data-i18n="respReparto">Responsabile di reparto</label><input type="text" id="resp_reparto"></div>
+    <div class="form-group"><label>RLS</label><input type="text" id="rls_nome"></div>
+  </div>
+  <div class="form-row cols-2">
+    <div class="form-group"><label data-i18n="compilatore">Segnalato da <span class="req">*</span></label><input type="text" id="compilatore" required></div>
+    <div class="form-group"><label data-i18n="emailLabel">Email <span class="req">*</span></label><input type="email" id="email" required></div>
+  </div>
+
+  <!-- FIRMA COMPILATORE -->
+  <div class="form-group" style="margin-top:12px">
+    <label data-i18n="firmaComp">✍️ Firma compilatore (disegna con il dito)</label>
+    <div class="firma-canvas-wrap">
+      <canvas id="firma-canvas" height="120"></canvas>
+    </div>
+    <div class="firma-tools">
+      <button type="button" onclick="clearFirma('firma-canvas')" data-i18n="cancFirma">Cancella firma</button>
+      <span class="firma-label" data-i18n="firmaHint">Firma con il dito o il mouse</span>
+    </div>
+  </div>
+
+  
+
+  <div class="form-group" style="margin-top:10px">
+    <label data-i18n="noteFinali">Note finali</label>
+    <textarea id="note_finali" rows="2" data-i18n-ph="noteHint"></textarea>
+  </div>
+</div>
+
+<!-- SUBMIT -->
+<div class="submit-area">
+  <button type="submit" class="btn-submit">
+    📤 <span data-i18n="invia">Invia segnalazione a RSPP</span>
+  </button>
+  <p style="font-size:12px;color:var(--gray-mid);margin-top:8px" data-i18n="invioNote">La segnalazione sarà ricevuta dall'ufficio HSE Somec</p>
+</div>
+
+</form>
+
+<!-- SUCCESS -->
+<div id="success-screen">
+  <div class="success-icon">✅</div>
+  <h2 data-i18n="succTitle">Segnalazione inviata</h2>
+  <p data-i18n="succMsg1">Il modulo è stato trasmesso all'RSPP Somec.</p>
+  <p data-i18n="succMsg2">Verrai ricontattato per eventuale follow-up.</p>
+  <div class="ticket" id="ticket-num">Protocollo: —</div>
+  <br>
+  <button class="btn-pdf" onclick="generatePDF()">📄 <span data-i18n="scaricaPDF">Scarica PDF riepilogo</span></button>
+  <br>
+  <button class="btn-new" onclick="resetForm()">+ <span data-i18n="nuovaSeg">Nuova segnalazione</span></button>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════════════════════
+const EMAILJS_PUBLIC_KEY  = 'DTKDYuVNORzx-J2Jq';
+const EMAILJS_SERVICE_ID  = 'service_nz3f6gr';
+const EMAILJS_TEMPLATE_ID = 'template_z0cc9na';
+const RSPP_EMAIL          = 'marco_sterchele@somecgroup.com';
+const WORKER_URL = 'https://somec-brevo-proxy.som-marco-sterchele.workers.dev';
+
+// ==========================================
+// FIREBASE — Database HSE Somec
+// ==========================================
+let _fbDB;
+let currentParams = null;  // variabile globale per Firebase in showSuccess
+try {
+  if (!firebase.apps.length) firebase.initializeApp({
+    apiKey:"AIzaSyDDwVVkLyfanLnXB58aozMuMRkx1kZPmBg",
+    authDomain:"somec-hse.firebaseapp.com",
+    projectId:"somec-hse",
+    storageBucket:"somec-hse.firebasestorage.app",
+    messagingSenderId:"547746230687",
+    appId:"1:547746230687:web:608c805c18bb1792134daa"
+  });
+  _fbDB = firebase.firestore();
+} catch(e) { console.warn('Firebase N/D:', e.message); }
+
+async function saveSafereportToFirebase(params, tipoEvento, causeSelezionate) {
+  if (!_fbDB) return;
+  try {
+    const now = new Date();
+    const m = now.getMonth() + 1;
+    const trimestre = m<=3?'Q1':m<=6?'Q2':m<=9?'Q3':'Q4';
+    const tipoKey = tipoEvento.toLowerCase().includes('near') ? 'near_miss'
+      : tipoEvento.toLowerCase().includes('infort') ? 'infortunio'
+      : tipoEvento.toLowerCase().includes('lesione') ? 'lesione'
+      : tipoEvento.toLowerCase().includes('emergenza') ? 'emergenza'
+      : 'situazione_pericolosa';
+
+    const doc = {
+      id:              params.protocollo,
+      timestamp:       now.toISOString(),
+      trimestre,
+      anno:            now.getFullYear(),
+      tipo:            tipoKey,
+      sito:            params.cantiere || '',
+      area:            params.area     || '',
+      data_ora:        params.data_ora || '',
+      azienda:         params.azienda  || '',
+      mansione:        params.mansione || '',
+      descrizione:     params.descrizione || '',
+      cause:           causeSelezionate || '',
+      parti_corpo:     params.parti_corpo || '',
+      trattamento:     params.trattamento || '',
+      giorni_prognosi: parseInt(params.prognosi) || 0,
+      dpi_indossati:   params.dpi_ind  || '',
+      formazione:      params.formaz   || '',
+      azioni_ac:       params.azioni_ac || '',
+      stato:           'aperta',
+      geo:             params.geo      || '',
+    };
+    await _fbDB.collection('safereport_sintesi').doc(params.protocollo).set(doc);
+    console.log('SafeReport salvato su Firebase:', params.protocollo);
+  } catch(e) { console.error('Firebase SafeReport error:', e.message); }
+}
+const HSE_DIRECT = 'omar.feletti@somecsintesi.com';
+const HSE_CC = 'msterchele@somecgroup.com';
+// ═══════════════════════════════════════════════════
+
+// ── I18N ──────────────────────────────────────────
+const i18n = {
+  it:{titolo:"Rilevazione e Analisi Incidenti",segnalazioni:"segnalazioni",s1:"Data, ora e luogo",s2:"Persona coinvolta",s3:"Tipo di evento",s4:"Descrizione dell'accaduto",s5:"Dove si è fatto male?",s6:"Foto allegate",s7:"Trattamento immediato",s8:"Analisi delle cause",s9:"Azioni da intraprendere",s10:"Responsabili e firme",bozza_trovata:"Bozza trovata — vuoi ripristinare?",ripristina:"Ripristina",ignora:"Ignora",data:"Data",ora:"Ora",cantiere:"Cantiere / Sito",area:"Area / Reparto",macchina:"Macchina / Attrezzatura",geoLabel:"📍 Posizione GPS",geoBtn:"Rileva posizione",geoStatus:"Non rilevata",cognome:"Cognome",nome:"Nome",azienda:"Azienda",mansione:"Mansione",altri:"Altre persone presenti",evNearMiss:"Near Miss",evNearMissDesc:"Successo, nessun ferito",evPericolosa:"Situazione pericolosa",evPericolosaDesc:"Rischio potenziale",evEmergenza:"Emergenza",evEmergenzaDesc:"Es. incendio",evLesione:"Lesione",evLesioneDesc:"Senza lasciare lavoro",evInfortunio:"Infortunio",evInfortunioDesc:"Con prognosi / PS",descrizione:"Descrizione",descrizioneHint:"Descrivi cosa è successo...",dinamica:"Dinamica",dinamicaDet:"Specificare",attOrd:"Attività ordinaria?",dpiInd:"Indossava i DPI?",formSvolta:"Formazione svolta?",attrConf:"Attrezzature conformi?",spazi:"Spazi adeguati?",procDef:"Procedure definite?",si:"Sì",no:"No",saltuaria:"Saltuaria",np:"N/P",inCorso:"In corso",riorg:"Riorg.",cambioOrg:"Cambio org.",cliccaCorpo:"Tocca per selezionare",partiSel:"Parti selezionate",nessunaSel:"Nessuna selezione",fotoOpt:"(opzionale — max 4)",fotoHint:"Tocca per scattare o scegliere foto",fotoHint2:"JPG, PNG — max 4 foto",trattLabel:"Cosa è stato fatto subito",trattHint:"Descrivere il trattamento immediato...",denunciaNum:"N° denuncia infortunio",prognosi:"Giorni di prognosi",procRisp:"Procedure rispettate?",causePrinc:"Cause principali",c1:"Comportamento scorretto",c2:"Mancato utilizzo DPI",c3:"Procedura non seguita",c4:"Formazione insufficiente",c5:"Attrezzatura non conforme",c6:"Manutenzione carente",c7:"Condizioni ambientali",c8:"Interferenza lavoratori",c9:"Stanchezza / distrazione",c10:"Mancata vigilanza preposto",c11:"Procedura non esistente",c12:"Causa esterna / terzi",ncDesc:"NC rilevata — descrizione",ncHint:"Descrivere la NC...",aggAC:"Aggiungi azione correttiva",acHint:"Descrivi l'azione correttiva...",dvrAgg:"Aggiornamento DVR?",peAgg:"Aggiorn. piano emergenza?",firmaNote:"⚠️ Il modulo verrà inviato all'RSPP per validazione.",respReparto:"Responsabile di reparto",compilatore:"Segnalato da",emailLabel:"Email",firmaComp:"✍️ Firma compilatore",firmaRSPP:"✍️ Firma RSPP",cancFirma:"Cancella firma",firmaHint:"Firma con il dito o il mouse",noteFinali:"Note finali",noteHint:"Note aggiuntive...",invia:"Invia segnalazione a RSPP",invioNote:"La segnalazione sarà ricevuta dall'ufficio HSE Somec",succTitle:"Segnalazione inviata",succMsg1:"Il modulo è stato trasmesso all'RSPP Somec.",succMsg2:"Verrai ricontattato per follow-up.",scaricaPDF:"Scarica PDF riepilogo",nuovaSeg:"Nuova segnalazione"},
+  fr:{titolo:"Déclaration et Analyse des Incidents",segnalazioni:"déclarations",s1:"Date, heure et lieu",s2:"Personne impliquée",s3:"Type d'événement",s4:"Description de l'événement",s5:"Où s'est-il blessé?",s6:"Photos jointes",s7:"Traitement immédiat",s8:"Analyse des causes",s9:"Actions à entreprendre",s10:"Responsables et signatures",bozza_trovata:"Brouillon trouvé — restaurer?",ripristina:"Restaurer",ignora:"Ignorer",data:"Date",ora:"Heure",cantiere:"Chantier / Site",area:"Zone / Département",macchina:"Machine / Équipement",geoLabel:"📍 Position GPS",geoBtn:"Détecter position",geoStatus:"Non détectée",cognome:"Nom",nome:"Prénom",azienda:"Société",mansione:"Fonction",altri:"Autres personnes présentes",evNearMiss:"Presque-accident",evNearMissDesc:"Événement sans blessé",evPericolosa:"Situation dangereuse",evPericolosaDesc:"Risque potentiel",evEmergenza:"Urgence",evEmergenzaDesc:"Ex. début d'incendie",evLesione:"Blessure légère",evLesioneDesc:"Sans arrêt de travail",evInfortunio:"Accident",evInfortunioDesc:"Avec arrêt / soins",descrizione:"Description",descrizioneHint:"Décrivez ce qui s'est passé...",dinamica:"Dynamique",dinamicaDet:"Préciser",attOrd:"Activité ordinaire?",dpiInd:"Portait les EPI?",formSvolta:"Formation effectuée?",attrConf:"Équipements conformes?",spazi:"Espaces adéquats?",procDef:"Procédures définies?",si:"Oui",no:"Non",saltuaria:"Occasionnelle",np:"S/O",inCorso:"En cours",riorg:"Réorg.",cambioOrg:"Changement org.",cliccaCorpo:"Touchez pour sélectionner",partiSel:"Parties sélectionnées",nessunaSel:"Aucune sélection",fotoOpt:"(optionnel — max 4)",fotoHint:"Touchez pour prendre ou choisir des photos",fotoHint2:"JPG, PNG — max 4 photos",trattLabel:"Ce qui a été fait immédiatement",trattHint:"Décrire le traitement immédiat...",denunciaNum:"N° déclaration accident",prognosi:"Jours d'arrêt",procRisp:"Procédures respectées?",causePrinc:"Causes principales",c1:"Comportement incorrect",c2:"Non-port des EPI",c3:"Procédure non respectée",c4:"Formation insuffisante",c5:"Équipement non conforme",c6:"Maintenance défaillante",c7:"Conditions ambiantes",c8:"Interférence travailleurs",c9:"Fatigue / distraction",c10:"Surveillance insuffisante",c11:"Procédure inexistante",c12:"Cause externe / tiers",ncDesc:"NC relevée — description",ncHint:"Décrire la NC...",aggAC:"Ajouter une action corrective",acHint:"Décrire l'action corrective...",dvrAgg:"Mise à jour DVR?",peAgg:"Mise à jour plan d'urgence?",firmaNote:"⚠️ Ce formulaire sera envoyé au Responsable HSE pour validation.",respReparto:"Responsable de département",compilatore:"Signalé par",emailLabel:"Email",firmaComp:"✍️ Signature déclarant",firmaRSPP:"✍️ Signature Responsable HSE",cancFirma:"Effacer signature",firmaHint:"Signez avec le doigt ou la souris",noteFinali:"Notes finales",noteHint:"Notes supplémentaires...",invia:"Envoyer la déclaration",invioNote:"La déclaration sera reçue par le service HSE Somec",succTitle:"Déclaration envoyée",succMsg1:"Le formulaire a été transmis au Responsable HSE Somec.",succMsg2:"Vous serez recontacté pour un suivi.",scaricaPDF:"Télécharger le PDF récapitulatif",nuovaSeg:"Nouvelle déclaration"},
+  en:{titolo:"Incident Recording & Analysis",segnalazioni:"reports",s1:"Date, time & location",s2:"Person involved",s3:"Event type",s4:"Description of event",s5:"Where was the injury?",s6:"Attached photos",s7:"Immediate treatment",s8:"Cause analysis",s9:"Actions to take",s10:"Responsible persons & signatures",bozza_trovata:"Draft found — restore?",ripristina:"Restore",ignora:"Discard",data:"Date",ora:"Time",cantiere:"Site / Yard",area:"Area / Department",macchina:"Machine / Equipment",geoLabel:"📍 GPS Location",geoBtn:"Detect location",geoStatus:"Not detected",cognome:"Surname",nome:"First name",azienda:"Company",mansione:"Role",altri:"Other persons present",evNearMiss:"Near Miss",evNearMissDesc:"Event, no injuries",evPericolosa:"Hazardous situation",evPericolosaDesc:"Potential risk",evEmergenza:"Emergency",evEmergenzaDesc:"e.g. fire",evLesione:"Minor injury",evLesioneDesc:"No lost time",evInfortunio:"Accident",evInfortunioDesc:"With medical / lost time",descrizione:"Description",descrizioneHint:"Describe what happened...",dinamica:"Mechanism",dinamicaDet:"Specify",attOrd:"Routine activity?",dpiInd:"Wearing PPE?",formSvolta:"Training completed?",attrConf:"Equipment compliant?",spazi:"Adequate workspace?",procDef:"Procedures defined?",si:"Yes",no:"No",saltuaria:"Occasional",np:"N/A",inCorso:"Ongoing",riorg:"Reorg.",cambioOrg:"Org. change",cliccaCorpo:"Tap to select",partiSel:"Selected parts",nessunaSel:"No selection",fotoOpt:"(optional — max 4)",fotoHint:"Tap to take or select photos",fotoHint2:"JPG, PNG — max 4 photos",trattLabel:"What was done immediately",trattHint:"Describe immediate treatment...",denunciaNum:"Accident report ref. no.",prognosi:"Days off work",procRisp:"Procedures followed?",causePrinc:"Main causes",c1:"Unsafe behaviour",c2:"PPE not worn",c3:"Procedure not followed",c4:"Insufficient training",c5:"Non-compliant equipment",c6:"Poor maintenance",c7:"Environmental conditions",c8:"Worker interference",c9:"Fatigue / distraction",c10:"Insufficient supervision",c11:"No procedure in place",c12:"External cause / third party",ncDesc:"NC noted — description",ncHint:"Describe NC...",aggAC:"Add corrective action",acHint:"Describe corrective action...",dvrAgg:"Update Risk Assessment?",peAgg:"Update Emergency Plan?",firmaNote:"⚠️ This form will be sent to the HSE Manager for validation.",respReparto:"Department manager",compilatore:"Reported by",emailLabel:"Email",firmaComp:"✍️ Reporter signature",firmaRSPP:"✍️ HSE Manager signature",cancFirma:"Clear signature",firmaHint:"Sign with finger or mouse",noteFinali:"Final notes",noteHint:"Additional notes...",invia:"Submit report to HSE",invioNote:"Report will be received by Somec HSE office",succTitle:"Report submitted",succMsg1:"The form has been sent to Somec HSE Manager.",succMsg2:"You will be contacted for follow-up.",scaricaPDF:"Download PDF summary",nuovaSeg:"New report"},
+  de:{titolo:"Unfallmeldung und -analyse",segnalazioni:"Meldungen",s1:"Datum, Uhrzeit und Ort",s2:"Betroffene Person",s3:"Art des Ereignisses",s4:"Beschreibung des Vorfalls",s5:"Wo wurde verletzt?",s6:"Fotos",s7:"Sofortmaßnahmen",s8:"Ursachenanalyse",s9:"Maßnahmen",s10:"Verantwortliche und Unterschriften",bozza_trovata:"Entwurf gefunden — wiederherstellen?",ripristina:"Wiederherstellen",ignora:"Verwerfen",data:"Datum",ora:"Uhrzeit",cantiere:"Standort / Werft",area:"Bereich / Abteilung",macchina:"Maschine / Gerät",geoLabel:"📍 GPS-Position",geoBtn:"Position erfassen",geoStatus:"Nicht erfasst",cognome:"Nachname",nome:"Vorname",azienda:"Unternehmen",mansione:"Funktion",altri:"Weitere anwesende Personen",evNearMiss:"Beinaheunfall",evNearMissDesc:"Ereignis ohne Verletzte",evPericolosa:"Gefährliche Situation",evPericolosaDesc:"Potenzielles Risiko",evEmergenza:"Notfall",evEmergenzaDesc:"z.B. Brand",evLesione:"Leichte Verletzung",evLesioneDesc:"Ohne Arbeitsausfall",evInfortunio:"Unfall",evInfortunioDesc:"Mit Arztbesuch / Ausfall",descrizione:"Beschreibung",descrizioneHint:"Beschreiben Sie was passiert ist...",dinamica:"Unfallhergang",dinamicaDet:"Präzisieren",attOrd:"Routinetätigkeit?",dpiInd:"PSA getragen?",formSvolta:"Schulung absolviert?",attrConf:"Geräte konform?",spazi:"Ausreichender Arbeitsraum?",procDef:"Verfahren definiert?",si:"Ja",no:"Nein",saltuaria:"Gelegentlich",np:"N/A",inCorso:"Laufend",riorg:"Umorg.",cambioOrg:"Org.-Änderung",cliccaCorpo:"Tippen zum Auswählen",partiSel:"Ausgewählte Teile",nessunaSel:"Keine Auswahl",fotoOpt:"(optional — max. 4)",fotoHint:"Tippen um Fotos aufzunehmen",fotoHint2:"JPG, PNG — max. 4 Fotos",trattLabel:"Was wurde sofort getan",trattHint:"Sofortmaßnahmen beschreiben...",denunciaNum:"Unfallmeldungs-Nr.",prognosi:"Ausfalltage",procRisp:"Verfahren eingehalten?",causePrinc:"Hauptursachen",c1:"Unsicheres Verhalten",c2:"PSA nicht getragen",c3:"Verfahren nicht befolgt",c4:"Unzureichende Schulung",c5:"Nichtkonformes Gerät",c6:"Schlechte Wartung",c7:"Umgebungsbedingungen",c8:"Interferenz Mitarbeiter",c9:"Müdigkeit / Ablenkung",c10:"Unzureichende Aufsicht",c11:"Kein Verfahren vorhanden",c12:"Externe Ursache / Dritte",ncDesc:"Festgestellte NC — Beschreibung",ncHint:"NC beschreiben...",aggAC:"Korrekturmaßnahme hinzufügen",acHint:"Korrekturmaßnahme beschreiben...",dvrAgg:"Gefährdungsbeurteilung aktualisieren?",peAgg:"Notfallplan aktualisieren?",firmaNote:"⚠️ Dieses Formular wird zur Validierung an den HSE-Manager gesendet.",respReparto:"Abteilungsleiter",compilatore:"Gemeldet von",emailLabel:"E-Mail",firmaComp:"✍️ Unterschrift Melder",firmaRSPP:"✍️ Unterschrift HSE-Manager",cancFirma:"Unterschrift löschen",firmaHint:"Mit Finger oder Maus unterschreiben",noteFinali:"Abschließende Anmerkungen",noteHint:"Zusätzliche Anmerkungen...",invia:"Meldung an HSE senden",invioNote:"Die Meldung wird vom Somec HSE-Büro empfangen",succTitle:"Meldung eingereicht",succMsg1:"Das Formular wurde an den HSE-Manager von Somec gesendet.",succMsg2:"Sie werden für Rückfragen kontaktiert.",scaricaPDF:"PDF-Zusammenfassung herunterladen",nuovaSeg:"Neue Meldung"}
+};
+
+let currentLang = 'it';
+let currentProto = '';
+
+function detectLang(){
+  const bl = (navigator.language||'').toLowerCase();
+  if(bl.startsWith('fr')) return 'fr';
+  if(bl.startsWith('de')) return 'de';
+  if(bl.startsWith('en')) return 'en';
+  return 'it';
+}
+
+function setLang(lang){
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(lang.toUpperCase())));
+  applyTranslations();
+  saveDraft();
+}
+
+function t(key){ return (i18n[currentLang]||i18n.it)[key] || (i18n.it[key]||key); }
+
+function applyTranslations(){
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if(el.tagName==='INPUT'||el.tagName==='TEXTAREA') el.placeholder = t(k);
+    else el.textContent = t(k);
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-ph')); });
+  document.title = 'SOMEC SafeReport — MS452-01';
+}
+
+// ── DRAFT AUTO-SAVE ──────────────────────────────
+const DRAFT_KEY = 'ms452_draft_v2';
+
+function collectFormData(){
+  return {
+    data: document.getElementById('data').value,
+    ora: document.getElementById('ora').value,
+    cantiere: document.getElementById('cantiere').value,
+    cantiere_refitting_nome: document.getElementById('cantiere_refitting_nome').value,
+    area: document.getElementById('area').value,
+    macchina: document.getElementById('macchina').value,
+    cognome: document.getElementById('cognome').value,
+    nome: document.getElementById('nome').value,
+    azienda: document.getElementById('azienda').value,
+    mansione: document.getElementById('mansione').value,
+    altri: document.getElementById('altri').value,
+    descrizione: document.getElementById('descrizione').value,
+    dinamica: document.getElementById('dinamica').value,
+    dinamica_det: document.getElementById('dinamica_det').value,
+    trattamento: document.getElementById('trattamento').value,
+    denuncia_num: document.getElementById('denuncia_num').value,
+    prognosi: document.getElementById('prognosi').value,
+    nc_desc: document.getElementById('nc_desc').value,
+    resp_reparto: document.getElementById('resp_reparto').value,
+    rls_nome: document.getElementById('rls_nome').value,
+    compilatore: document.getElementById('compilatore').value,
+    email: document.getElementById('email').value,
+    note_finali: document.getElementById('note_finali').value,
+    lang: currentLang,
+    ts: Date.now()
+  };
+}
+
+function saveDraft(){
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(collectFormData())); } catch(e){}
+}
+
+function loadDraft(){
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');
+    if(d && d.ts && (Date.now()-d.ts) < 86400000*7) return d;
+  } catch(e){}
+  return null;
+}
+
+function restoreDraft(){
+  const d = loadDraft();
+  if(!d) return;
+  Object.keys(d).forEach(k => {
+    const el = document.getElementById(k);
+    if(el) el.value = d[k]||'';
+  });
+  onCantiereSintesiChange(document.getElementById('cantiere').value);
+  if(d.lang) setLang(d.lang);
+  document.getElementById('draft-banner').style.display='none';
+}
+
+function discardDraft(){
+  localStorage.removeItem(DRAFT_KEY);
+  document.getElementById('draft-banner').style.display='none';
+}
+
+// Auto-save every 30s
+setInterval(saveDraft, 30000);
+document.querySelectorAll('input,select,textarea').forEach(el => el.addEventListener('change', saveDraft));
+
+// ── COUNTER ─────────────────────────────────────
+function getCounter(){ return parseInt(localStorage.getItem('ms452_counter')||'0'); }
+function incCounter(){ localStorage.setItem('ms452_counter', getCounter()+1); updateCounterDisplay(); }
+function updateCounterDisplay(){ document.getElementById('counter-num').textContent = getCounter(); }
+function showCounter(){ alert('📊 ' + t('segnalazioni') + ': ' + getCounter() + '\nDal ' + (localStorage.getItem('ms452_first_date')||'—')); }
+
+// ── GEO ──────────────────────────────────────────
+function getGeo(){
+  const status = document.getElementById('geo-status');
+  status.textContent = '⏳ Rilevamento...';
+  status.className = 'geo-status';
+  if(!navigator.geolocation){ status.textContent = '❌ Non supportato'; return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById('geo-lat').value = pos.coords.latitude.toFixed(6);
+      document.getElementById('geo-lng').value = pos.coords.longitude.toFixed(6);
+      document.getElementById('geo-acc').value = Math.round(pos.coords.accuracy);
+      status.textContent = '✅ ' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) + ' (±' + Math.round(pos.coords.accuracy) + 'm)';
+      status.className = 'geo-status ok';
+    },
+    err => { status.textContent = '❌ ' + (err.code===1?'Permesso negato':'Errore rilevamento'); },
+    {enableHighAccuracy:true, timeout:10000}
+  );
+}
+
+// ── FOTO ─────────────────────────────────────────
+const fotoFiles = [];
+const MAX_FOTO = 4;
+
+function handleFotos(input){
+  const files = Array.from(input.files);
+  files.forEach(file => {
+    if(fotoFiles.length >= MAX_FOTO) return;
+    if(!file.type.startsWith('image/')) return;
+    fotoFiles.push(file);
+    const reader = new FileReader();
+    reader.onload = e => addFotoThumb(e.target.result, fotoFiles.length-1);
+    reader.readAsDataURL(file);
+  });
+  input.value='';
+  updateFotoCount();
+}
+
+function addFotoThumb(src, idx){
+  const prev = document.getElementById('foto-previews');
+  const div = document.createElement('div');
+  div.className='foto-thumb';
+  div.dataset.idx=idx;
+  div.innerHTML=`<img src="${src}"><button type="button" class="del-btn" onclick="removeFoto(${idx})">×</button>`;
+  prev.appendChild(div);
+}
+
+function removeFoto(idx){
+  fotoFiles.splice(idx,1);
+  const prev = document.getElementById('foto-previews');
+  prev.innerHTML='';
+  fotoFiles.forEach((f,i) => {
+    const reader = new FileReader();
+    reader.onload = e => addFotoThumb(e.target.result, i);
+    reader.readAsDataURL(f);
+  });
+  updateFotoCount();
+}
+
+function updateFotoCount(){
+  const c = document.getElementById('foto-count');
+  c.textContent = fotoFiles.length > 0 ? fotoFiles.length + '/' + MAX_FOTO + ' foto allegate' : '';
+  const area = document.getElementById('foto-area');
+  if(fotoFiles.length >= MAX_FOTO) area.style.opacity='0.5';
+  else area.style.opacity='1';
+}
+
+// ── FIRMA CANVAS ─────────────────────────────────
+function initCanvas(canvasId){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  canvas.width = canvas.offsetWidth || 600;
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle='#1a4a7a'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.lineJoin='round';
+  let drawing=false, lastX=0, lastY=0;
+
+  function getPos(e){
+    const r = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return [(src.clientX-r.left)*(canvas.width/r.width), (src.clientY-r.top)*(canvas.height/r.height)];
+  }
+  function start(e){ e.preventDefault(); drawing=true; [lastX,lastY]=getPos(e); }
+  function draw(e){ e.preventDefault(); if(!drawing) return; const [x,y]=getPos(e); ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); [lastX,lastY]=[x,y]; }
+  function stop(){ drawing=false; }
+
+  canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',draw); canvas.addEventListener('mouseup',stop); canvas.addEventListener('mouseleave',stop);
+  canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',draw,{passive:false}); canvas.addEventListener('touchend',stop);
+}
+
+function clearFirma(id){
+  const c = document.getElementById(id);
+  c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+
+function isFirmaEmpty(id){
+  const c = document.getElementById(id);
+  const data = c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+  return !data.some(v=>v!==0);
+}
+
+// ── BODY PARTS ───────────────────────────────────
+const bodyParts = new Set();
+function toggleBodyPart(el, name){
+  if(bodyParts.has(name)){
+    bodyParts.delete(name);
+    el.querySelectorAll('ellipse,rect').forEach(s=>s.setAttribute('fill','#e8f0fa'));
+    el.querySelectorAll('text').forEach(t=>t.setAttribute('fill','#1a4a7a'));
+  } else {
+    bodyParts.add(name);
+    el.querySelectorAll('ellipse,rect').forEach(s=>s.setAttribute('fill','#2563a8'));
+    el.querySelectorAll('text').forEach(t=>t.setAttribute('fill','white'));
+  }
+  renderBodyTags();
+}
+function renderBodyTags(){
+  const c = document.getElementById('body-tags');
+  if(bodyParts.size===0){ c.innerHTML='<span class="body-none">'+t('nessunaSel')+'</span>'; return; }
+  c.innerHTML=[...bodyParts].map(p=>`<span class="body-part-tag">${p} ×</span>`).join('');
+  c.querySelectorAll('.body-part-tag').forEach((tag,i)=>{ tag.onclick=()=>{ const arr=[...bodyParts]; removeBodyPartByName(arr[i]); }; });
+}
+function removeBodyPartByName(name){
+  bodyParts.delete(name);
+  document.querySelectorAll('#body-svg .bp').forEach(g=>{
+    if([...bodyParts].some(p=>g.id.includes(p.toLowerCase().replace(/ /g,'-')))){
+      g.querySelectorAll('ellipse,rect').forEach(s=>s.setAttribute('fill','#2563a8'));
+      g.querySelectorAll('text').forEach(t=>t.setAttribute('fill','white'));
+    } else {
+      g.querySelectorAll('ellipse,rect').forEach(s=>s.setAttribute('fill','#e8f0fa'));
+      g.querySelectorAll('text').forEach(t=>t.setAttribute('fill','#1a4a7a'));
+    }
+  });
+  renderBodyTags();
+}
+
+// ── EVENT / SINO / CAUSE ─────────────────────────
+function selectEvent(card, type){
+  document.querySelectorAll('.event-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  card.querySelector('input').checked=true;
+  document.getElementById('infortuni-extra').classList.toggle('show', type==='infortunio'||type==='lesione');
+  updateProgress();
+}
+function toggleSino(el){
+  const name=el.querySelector('input').name;
+  document.querySelectorAll(`[name="${name}"]`).forEach(i=>i.closest('.sino-item').classList.remove('selected'));
+  el.classList.add('selected'); el.querySelector('input').checked=true;
+}
+function toggleCause(el){ el.classList.toggle('selected'); }
+
+// ── AC ROWS ──────────────────────────────────────
+function addAC(){
+  const list=document.getElementById('ac-list');
+  const row=document.createElement('div'); row.className='ac-row';
+  row.innerHTML=`<textarea rows="2" placeholder="${t('acHint')}"></textarea><button type="button" class="ac-del" onclick="removeAC(this)">×</button>`;
+  list.appendChild(row);
+}
+function removeAC(btn){ const rows=document.querySelectorAll('.ac-row'); if(rows.length>1) btn.closest('.ac-row').remove(); else btn.closest('.ac-row').querySelector('textarea').value=''; }
+
+// ── PROGRESS ─────────────────────────────────────
+function updateProgress(){
+  const req=document.querySelectorAll('[required]');
+  let filled=0; req.forEach(el=>{ if(el.value.trim()) filled++; });
+  const ev=document.querySelector('.event-card.selected');
+  const pct=Math.min(95,Math.round((filled/req.length)*80+(ev?15:0)));
+  document.getElementById('progress').style.width=pct+'%';
+}
+document.querySelectorAll('input,select,textarea').forEach(el=>el.addEventListener('input',updateProgress));
+
+// ── PDF GENERATION ───────────────────────────────
+function generatePDF(){
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const blue=[26,74,122], white=[255,255,255], grayBg=[245,246,248], dark=[26,30,40],
+        mid=[74,80,96], lightBlue=[232,240,250], red=[192,57,43], borderGray=[180,185,192];
+  const W=210, margin=10, contentW=W-2*margin;
+  const LW=0.25; // line width standard
+
+  // ═══════════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════════
+  let y=0;
+  const pageFooterY=284;
+
+  const newPage=()=>{
+    doc.addPage();
+    drawPageHeader();
+    y=28;
+  };
+  const checkY=(needed)=>{ if(y+needed>pageFooterY) newPage(); };
+
+  // Checkbox disegnata a mano
+  const checkbox=(x,cy,checked,label,color)=>{
+    // Draw white background box with border
+    doc.setFillColor(255,255,255);
+    doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+    doc.rect(x,cy-3.5,4,4,'FD');
+    if(checked){
+      // Filled colored inner square as checkmark indicator
+      doc.setFillColor(...(color||blue));
+      doc.rect(x+0.8,cy-2.7,2.4,2.4,'F');
+    }
+    doc.setLineWidth(LW);
+    if(label){
+      doc.setTextColor(...dark); doc.setFontSize(8); doc.setFont('helvetica','normal');
+      doc.text(label,x+5.5,cy);
+    }
+  };
+
+  // Row in tabella: label(bold) | value
+  const tableRow=(label,value,rowY,h,colW)=>{
+    const cw=colW||contentW;
+    doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+    doc.rect(margin,rowY,cw,h,'S');
+    doc.setFillColor(...grayBg); doc.rect(margin,rowY,50,h,'F');
+    doc.setDrawColor(...borderGray); doc.line(margin+50,rowY,margin+50,rowY+h);
+    doc.setTextColor(...blue); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+    doc.text(label.toUpperCase(),margin+2,rowY+h/2+1.5);
+    doc.setTextColor(...dark); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    const lines=doc.splitTextToSize(String(value||'—'),cw-53);
+    doc.text(lines,margin+52,rowY+h/2-((lines.length-1)*2.5)+1.5);
+  };
+
+  // Section header (dark blue band like original)
+  const sectionHeader=(title,sy)=>{
+    doc.setFillColor(...blue); doc.rect(margin,sy,contentW,6,'F');
+    doc.setTextColor(...white); doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.text(title.toUpperCase(),margin+2,sy+4.5);
+    return sy+6;
+  };
+
+  // ═══════════════════════════════════════════════
+  // PAGE HEADER (ripetuto su ogni pagina)
+  // ═══════════════════════════════════════════════
+  const drawPageHeader=()=>{
+    // Bordo esterno header
+    doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+    doc.rect(margin,8,contentW,14,'S');
+    // Logo area
+    doc.setFillColor(...white); doc.rect(margin,8,38,14,'F');
+    try {
+      const logoB64=document.querySelector('.header-logo img').src;
+      doc.addImage(logoB64,'PNG',margin+2,9.5,34,10);
+    } catch(e){}
+    // Linea verticale separatrice
+    doc.setDrawColor(...borderGray); doc.line(margin+38,8,margin+38,22);
+    // Titolo centrale
+    doc.setTextColor(...dark); doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text('MODULO SICUREZZA',margin+70,14,{align:'center'});
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...mid);
+    doc.text(t('titolo'),margin+70,19,{align:'center'});
+    // Doc number area (destra)
+    doc.setDrawColor(...borderGray); doc.line(margin+38+contentW*0.55,8,margin+38+contentW*0.55,22);
+    doc.setFontSize(7); doc.setTextColor(...mid);
+    doc.text('Numero Documento',margin+38+contentW*0.55+2,12);
+    doc.setFontSize(9); doc.setTextColor(...blue); doc.setFont('helvetica','bold');
+    doc.text('MS452-01',margin+38+contentW*0.55+2,18);
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...mid);
+    doc.text('Rev.02 — '+new Date().toLocaleDateString('it-IT'),margin+38+contentW*0.55+2,21.5);
+  };
+
+  // ═══════════════════════════════════════════════
+  // PAGINA 1
+  // ═══════════════════════════════════════════════
+  drawPageHeader();
+  y=25;
+
+  // Protocollo + tipo evento
+  doc.setFillColor(...lightBlue); doc.rect(margin,y,contentW,7,'F');
+  doc.setDrawColor(...blue); doc.setLineWidth(0.4); doc.rect(margin,y,contentW,7,'S');
+  doc.setTextColor(...blue); doc.setFontSize(9); doc.setFont('helvetica','bold');
+  doc.text('Protocollo: '+currentProto,margin+2,y+5);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...mid);
+  doc.text(new Date().toLocaleString('it-IT'),W-margin,y+5,{align:'right'});
+  doc.setLineWidth(LW);
+  y+=7;
+
+  // Badge tipo evento
+  const evEl=document.querySelector('.event-card.selected .ev-label');
+  const evText=evEl?evEl.textContent.trim():'—';
+  const isDanger=evText.toLowerCase().match(/infort|accident|unfall/);
+  doc.setFillColor(...(isDanger?red:blue)); doc.rect(margin,y,contentW,6,'F');
+  doc.setTextColor(...white); doc.setFontSize(9); doc.setFont('helvetica','bold');
+  doc.text('TIPO EVENTO: '+evText.toUpperCase(),W/2,y+4.5,{align:'center'});
+  y+=8;
+
+  // ── SEZIONE 1: DATI GENERALI ──
+  y=sectionHeader('1 — '+t('s1').toUpperCase(),y)+1;
+  // Riga DATA | ORA
+  const col2W=contentW/2-1;
+  tableRow('Data',document.getElementById('data').value,y,7,col2W);
+  // Ora (destra)
+  doc.setDrawColor(...borderGray); doc.rect(margin+col2W+2,y,col2W,7,'S');
+  doc.setFillColor(...grayBg); doc.rect(margin+col2W+2,y,28,7,'F');
+  doc.line(margin+col2W+2+28,y,margin+col2W+2+28,y+7);
+  doc.setTextColor(...blue); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+  doc.text('ORA:',margin+col2W+4,y+5);
+  doc.setTextColor(...dark); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text(document.getElementById('ora').value||'—',margin+col2W+32,y+5);
+  y+=7;
+  tableRow('Cantiere / Sito',getCantiereValue(),y,7);y+=7;
+  tableRow('Area / Reparto',document.getElementById('area').value,y,7);y+=7;
+  const macchVal=document.getElementById('macchina').value;
+  if(macchVal){tableRow('Macchina / Attrezzatura',macchVal,y,7);y+=7;}
+  const lat=document.getElementById('geo-lat').value,lng=document.getElementById('geo-lng').value,acc=document.getElementById('geo-acc').value;
+  if(lat){tableRow('GPS',lat+', '+lng+(acc?' (±'+acc+'m)':'')+' — google.com/maps?q='+lat+','+lng,y,7);y+=7;}
+  y+=3;
+
+  // ── SEZIONE 2: PERSONA COINVOLTA ──
+  checkY(40);
+  y=sectionHeader('2 — '+t('s2').toUpperCase(),y)+1;
+  // Riga mansione | cognome | nome
+  const col3=contentW/3;
+  doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+  doc.rect(margin,y,contentW,7,'S');
+  doc.setFillColor(...grayBg);
+  doc.rect(margin,y,22,7,'F'); doc.line(margin+22,y,margin+22,y+7);
+  doc.rect(margin+col3,y,22,7,'F'); doc.line(margin+col3+22,y,margin+col3+22,y+7);
+  doc.rect(margin+col3*2,y,22,7,'F'); doc.line(margin+col3*2+22,y,margin+col3*2+22,y+7);
+  doc.line(margin+col3,y,margin+col3,y+7); doc.line(margin+col3*2,y,margin+col3*2,y+7);
+  doc.setTextColor(...blue); doc.setFontSize(7); doc.setFont('helvetica','bold');
+  doc.text('AZIENDA:',margin+1,y+4.5);
+  doc.text('COGNOME:',margin+col3+1,y+4.5);
+  doc.text('NOME:',margin+col3*2+1,y+4.5);
+  doc.setTextColor(...dark); doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+  doc.text(document.getElementById('azienda').value||'—',margin+24,y+5);
+  doc.text(document.getElementById('cognome').value||'—',margin+col3+24,y+5);
+  doc.text(document.getElementById('nome').value||'—',margin+col3*2+24,y+5);
+  y+=7;
+  tableRow('Mansione',document.getElementById('mansione').value,y,7,contentW/2);
+  const altriVal=document.getElementById('altri').value;
+  if(altriVal){
+    doc.setDrawColor(...borderGray); doc.rect(margin+contentW/2+2,y,contentW/2-2,7,'S');
+    doc.setFillColor(...grayBg); doc.rect(margin+contentW/2+2,y,30,7,'F');
+    doc.line(margin+contentW/2+2+30,y,margin+contentW/2+2+30,y+7);
+    doc.setTextColor(...blue); doc.setFontSize(7); doc.setFont('helvetica','bold');
+    doc.text('ALTRI PRESENTI:',margin+contentW/2+3,y+4.5);
+    doc.setTextColor(...dark); doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+    doc.text(altriVal,margin+contentW/2+33,y+5);
+  }
+  y+=10;
+
+  // ── SEZIONE 3: TIPO EVENTO + CHECKBOXES ──
+  checkY(35);
+  y=sectionHeader('3 — TIPO DI EVENTO / CLASSIFICAZIONE',y)+2;
+  const eventi=[
+    {key:'near-miss',label:'MANCATO INFORTUNIO (Near Miss)'},
+    {key:'pericolosa',label:'SITUAZIONE PERICOLOSA (potrebbe succedere qualcosa)'},
+    {key:'emergenza',label:'EMERGENZA (es. principio di incendio)'},
+    {key:'lesione',label:'LESIONE (senza lasciare il lavoro)'},
+    {key:'infortunio',label:'INFORTUNIO (con prognosi / Pronto Soccorso)'}
+  ];
+  const selectedEv=document.querySelector('input[name="evento"]:checked')?.value||'';
+  eventi.forEach(ev=>{
+    const evChecked=selectedEv===ev.key;
+    const evColor=isDanger&&ev.key==='infortunio'?red:blue;
+    // Box
+    doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+    doc.rect(margin+2,y-2.5,4,4,'FD');
+    if(evChecked){
+      doc.setFillColor(...evColor);
+      doc.rect(margin+2.8,y-1.7,2.4,2.4,'F');
+    }
+    doc.setTextColor(...dark); doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text(ev.label,margin+7.5,y+0.5);
+    y+=6;
+  });
+  y+=2;
+
+  // ── SEZIONE 4: DESCRIZIONE ──
+  checkY(45);
+  y=sectionHeader('4 — '+t('s4').toUpperCase(),y)+1;
+  const descVal=document.getElementById('descrizione').value||'—';
+  const descLines=doc.splitTextToSize(descVal,contentW-4);
+  const descH=Math.max(20,descLines.length*4.5+4);
+  doc.setDrawColor(...borderGray); doc.rect(margin,y,contentW,descH,'S');
+  doc.setTextColor(...dark); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text(descLines,margin+2,y+5);
+  y+=descH+2;
+
+  // Dinamica + corpo
+  checkY(40);
+  //   // Dinamica + corpo: layout a 2 colonne con altezza calcolata
+  const dinW=contentW*0.58;
+  const bodyX=margin+dinW+2, bodyW=contentW-dinW-2;
+  const dinamicheList=[
+    "Caduto da (caduta dall'alto)","Caduto in piano","Ha urtato contro","Urtato da",
+    "Schiacciato da","Investito da","Impigliato / agganciato",
+    "A contatto con","Ha inalato","Ha ingerito",
+    "Esposto a agente fisico","Ha messo un piede in fallo",
+    "Movimento scoordinato","Ha fatto uno sforzo"
+  ];
+  const selectedDin=document.getElementById('dinamica').value;
+  const dinDet=document.getElementById('dinamica_det').value;
+  const dinRows=Math.ceil(dinamicheList.length/2);
+  const secH=Math.max(dinRows*6+10, 52); // min height to fit body figure
+  checkY(secH+40);
+  // Header affiancato
+  doc.setFillColor(...blue); doc.rect(margin,y,dinW,6,'F');
+  doc.setFillColor(...blue); doc.rect(bodyX,y,bodyW,6,'F');
+  doc.setTextColor(...white); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+  doc.text("COSA E' SUCCESSO? (DINAMICA)",margin+2,y+4.5);
+  doc.text("DOVE SI E' FATTO MALE?",bodyX+2,y+4.5);
+  y+=6;
+  // Boxes
+  doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+  doc.rect(margin,y,dinW,secH,'S');
+  doc.rect(bodyX,y,bodyW,secH,'S');
+  // Checkboxes dinamiche 2 colonne
+  const dinHalfW=dinW/2;
+  dinamicheList.forEach((d,i)=>{
+    const col=i<7?0:1;
+    const row=i<7?i:i-7;
+    const cx=margin+2+col*dinHalfW;
+    const cy=y+5+row*6;
+    const dinMatch = selectedDin && (selectedDin === d || selectedDin.includes(d.split(' ')[0]+' '+d.split(' ')[1]));
+    doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+    doc.rect(cx,cy-3,4,4,'FD');
+    if(dinMatch){ doc.setFillColor(...blue); doc.rect(cx+0.8,cy-2.2,2.4,2.4,'F'); }
+    doc.setTextColor(...dark); doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text(d,cx+5.5,cy);
+  });
+  if(dinDet){
+    doc.setTextColor(...mid); doc.setFontSize(7.5); doc.setFont('helvetica','italic');
+    doc.text('Specificare: '+dinDet,margin+2,y+secH-2);
+  }
+  // Corpo anatomico fedele all'originale — vista frontale
+  const figX=bodyX+bodyW*0.3, figY=y+2, scale=1.0;
+  const s=scale;
+  doc.setDrawColor(...blue); doc.setLineWidth(0.5);
+  doc.setFillColor(240,245,252);
+  
+  // Determina parti selezionate per evidenziatura
+  const bodyPartMap={
+    'Testa':      {shape:'circle', cx:figX,    cy:figY+4*s,  r:3.5*s},
+    'Collo':      {shape:'rect',   x:figX-1.5*s, y:figY+7.5*s, w:3*s,  h:2.5*s},
+    'Torso':      {shape:'rect',   x:figX-6*s,   y:figY+10*s,  w:12*s, h:12*s},
+    'Addome':     {shape:'rect',   x:figX-5.5*s, y:figY+18*s,  w:11*s, h:5*s},
+    'Braccio sinistro': {shape:'rect', x:figX-11*s, y:figY+10*s, w:4*s, h:11*s},
+    'Braccio destro':   {shape:'rect', x:figX+7*s,  y:figY+10*s, w:4*s, h:11*s},
+    'Mano sinistra':    {shape:'ellipse', cx:figX-9*s, cy:figY+23*s, rx:2.5*s, ry:2*s},
+    'Mano destra':      {shape:'ellipse', cx:figX+9*s, cy:figY+23*s, rx:2.5*s, ry:2*s},
+    'Gamba sinistra':   {shape:'rect', x:figX-6*s,  y:figY+25*s, w:5*s, h:13*s},
+    'Gamba destra':     {shape:'rect', x:figX+1*s,  y:figY+25*s, w:5*s, h:13*s},
+    'Piede sinistro':   {shape:'ellipse', cx:figX-3.5*s, cy:figY+39*s, rx:3.5*s, ry:2*s},
+    'Piede destro':     {shape:'ellipse', cx:figX+3.5*s, cy:figY+39*s, rx:3.5*s, ry:2*s},
+  };
+
+  // Disegna prima le parti evidenziate (sfondo rosso)
+  if(bodyParts.size>0){
+    [...bodyParts].forEach(p=>{
+      const part=bodyPartMap[p];
+      if(!part) return;
+      doc.setFillColor(220,50,50);
+      doc.setDrawColor(180,20,20); doc.setLineWidth(0.5);
+      if(part.shape==='circle') doc.circle(part.cx,part.cy,part.r,'FD');
+      else if(part.shape==='rect') doc.rect(part.x,part.y,part.w,part.h,'FD');
+      else if(part.shape==='ellipse') doc.ellipse(part.cx,part.cy,part.rx,part.ry,'FD');
+    });
+  }
+
+  // Disegna figura anatomica (contorni)
+  doc.setDrawColor(...blue); doc.setLineWidth(0.5);
+  doc.setFillColor(240,245,252);
+  // Testa
+  if(!bodyParts.has('Testa')) doc.circle(figX,figY+4*s,3.5*s,'FD');
+  else doc.circle(figX,figY+4*s,3.5*s,'S');
+  // Collo
+  doc.setDrawColor(...blue);
+  doc.line(figX-1.5*s,figY+7.5*s,figX-1.5*s,figY+10*s);
+  doc.line(figX+1.5*s,figY+7.5*s,figX+1.5*s,figY+10*s);
+  // Spalle
+  doc.line(figX-1.5*s,figY+10*s,figX-7*s,figY+10*s);
+  doc.line(figX+1.5*s,figY+10*s,figX+7*s,figY+10*s);
+  // Torso
+  if(!bodyParts.has('Torso')&&!bodyParts.has('Addome')){
+    doc.rect(figX-6*s,figY+10*s,12*s,15*s,'FD');
+  } else {
+    doc.rect(figX-6*s,figY+10*s,12*s,15*s,'S');
+  }
+  // Bacino
+  doc.line(figX-6*s,figY+25*s,figX-3*s,figY+27*s);
+  doc.line(figX+6*s,figY+25*s,figX+3*s,figY+27*s);
+  // Braccio SX
+  if(!bodyParts.has('Braccio sinistro')){doc.setFillColor(240,245,252);}
+  doc.rect(figX-11*s,figY+10*s,4*s,11*s,'S');
+  // Braccio DX
+  doc.rect(figX+7*s,figY+10*s,4*s,11*s,'S');
+  // Mano SX
+  if(!bodyParts.has('Mano sinistra')){doc.setFillColor(240,245,252);}
+  doc.ellipse(figX-9*s,figY+23*s,2.5*s,2*s,'S');
+  // Mano DX
+  doc.ellipse(figX+9*s,figY+23*s,2.5*s,2*s,'S');
+  // Gamba SX
+  doc.rect(figX-6*s,figY+27*s,5*s,12*s,'S');
+  // Gamba DX
+  doc.rect(figX+1*s,figY+27*s,5*s,12*s,'S');
+  // Piede SX
+  doc.ellipse(figX-3.5*s,figY+40*s,3.5*s,2*s,'S');
+  // Piede DX
+  doc.ellipse(figX+3.5*s,figY+40*s,3.5*s,2*s,'S');
+  // Capelli stilizzati
+  doc.setLineWidth(0.3);
+  doc.line(figX-2*s,figY+0.5*s,figX-3.2*s,figY-0.5*s);
+  doc.line(figX,figY+0.3*s,figX,figY-0.8*s);
+  doc.line(figX+2*s,figY+0.5*s,figX+3.2*s,figY-0.5*s);
+  doc.setLineWidth(LW);
+  
+  // Lista parti lesionate sotto il corpo
+  if(bodyParts.size>0){
+    doc.setFillColor(254,235,232); doc.setDrawColor(220,50,50); doc.setLineWidth(0.3);
+    let partY=figY+44*s;
+    [...bodyParts].slice(0,5).forEach(p=>{
+      doc.rect(bodyX+1,partY-3,bodyW-2,4,'FD');
+      doc.setTextColor(180,20,20); doc.setFontSize(7); doc.setFont('helvetica','bold');
+      doc.text('▶ '+p,bodyX+3,partY);
+      partY+=4.5;
+    });
+    doc.setLineWidth(LW);
+  }
+  y+=secH+3;
+  // ── Contesto (checkboxes Si/No) ──
+  checkY(32);
+  const siNoItems=[
+    {label:'Attività ordinaria?',name:'attord'},
+    {label:'Indossava i DPI?',name:'dpi_ind'},
+    {label:'Formazione svolta?',name:'form_svolta'},
+    {label:'Attrezzature conformi?',name:'attr_conf'},
+    {label:'Spazi adeguati?',name:'spazi'},
+    {label:'Procedure definite?',name:'proc_def'}
+  ];
+  doc.setDrawColor(...borderGray); doc.rect(margin,y,contentW,28,'S');
+  let sinoX=margin+2, sinoY=y+4;
+  siNoItems.forEach((item,i)=>{
+    if(i===3){sinoX=margin+contentW/2+2; sinoY=y+5;}
+    // Read all sino-items for this radio group
+    const allItems=document.querySelectorAll('.sino-item[onclick]');
+    let sinoSelVal='';
+    allItems.forEach(el=>{
+      const inp=el.querySelector('input[name="'+item.name+'"]');
+      if(inp && el.classList.contains('selected')){
+        const spans=el.querySelectorAll('span');
+        spans.forEach(sp=>{ if(sp.textContent.trim()&&sp.textContent.trim().length<10) sinoSelVal=sp.textContent.trim(); });
+      }
+    });
+    doc.setTextColor(...dark); doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.text(item.label,sinoX,sinoY);
+    const isSi=['Si','Sì','Yes','Oui','Ja'].some(v=>sinoSelVal.includes(v));
+    const isNo=['No','Nein','Non'].some(v=>sinoSelVal===v);
+    // SI box inline
+    doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+    doc.rect(sinoX+52,sinoY-3,4,4,'FD');
+    if(isSi){ doc.setFillColor(...blue); doc.rect(sinoX+52.8,sinoY-2.2,2.4,2.4,'F'); }
+    doc.setTextColor(...dark); doc.setFontSize(8); doc.text(t('si'),sinoX+57.5,sinoY);
+    // NO box inline
+    doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray);
+    doc.rect(sinoX+66,sinoY-3,4,4,'FD');
+    if(isNo){ doc.setFillColor(...blue); doc.rect(sinoX+66.8,sinoY-2.2,2.4,2.4,'F'); }
+    doc.setTextColor(...dark); doc.text(t('no'),sinoX+71.5,sinoY);
+    sinoY+=7.5;
+  });
+  y+=30;
+
+  // ═══════════════════════════════════════════════
+  // PAGINA 2
+  // ═══════════════════════════════════════════════
+  newPage();
+
+  // ── SEZIONE 5: TRATTAMENTO ──
+  y=sectionHeader('5 — '+t('s7').toUpperCase(),y)+1;
+  const trattVal=document.getElementById('trattamento').value||'—';
+  const trattLines=doc.splitTextToSize(trattVal,contentW-4);
+  const trattH=Math.max(14,trattLines.length*4.5+4);
+  doc.setDrawColor(...borderGray); doc.rect(margin,y,contentW,trattH,'S');
+  doc.setTextColor(...dark); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text(trattLines,margin+2,y+5);
+  y+=trattH+2;
+
+  // INFORTUNIO box
+  const denVal=document.getElementById('denuncia_num').value;
+  const progVal=document.getElementById('prognosi').value;
+  if(denVal||progVal||isDanger){
+    doc.setDrawColor(...red); doc.setLineWidth(0.5);
+    doc.rect(margin,y,contentW,9,'S');
+    doc.setLineWidth(LW); doc.setFillColor(254,235,232); doc.rect(margin,y,contentW,9,'F');
+    doc.setDrawColor(...red); doc.rect(margin,y,contentW,9,'S');
+    doc.setTextColor(...red); doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.text('INFORTUNIO',margin+2,y+6);
+    doc.setTextColor(...dark); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+    doc.text('N° denuncia: '+(denVal||'—'),margin+35,y+6);
+    doc.text('Giorni prognosi: '+(progVal||'—'),margin+110,y+6);
+    y+=11;
+  }
+  y+=2;
+
+  // ── SEZIONE 6: ANALISI CAUSE ──
+  checkY(50);
+  y=sectionHeader('6 — '+t('s8').toUpperCase(),y)+1;
+  // Procedure rispettate
+  const procRispEl=document.querySelector('[name="proc_risp"].selected');
+  const procRispVal=procRispEl?procRispEl.querySelector('span').textContent:'';
+  doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+  doc.rect(margin,y,contentW,8,'S');
+  doc.setTextColor(...dark); doc.setFontSize(8.5); doc.setFont('helvetica','normal');
+  doc.text('Le procedure di lavoro sono state rispettate:',margin+2,y+5.5);
+  const isSiProc=!!procRispVal&&!['No','Nein','Non'].includes(procRispVal);
+  const isNoProc=['No','Nein','Non'].includes(procRispVal);
+  // SI box
+  doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray);
+  doc.rect(margin+contentW-28,y+2,4,4,'FD');
+  if(isSiProc){ doc.setFillColor(...blue); doc.rect(margin+contentW-27.2,y+2.8,2.4,2.4,'F'); }
+  doc.setTextColor(...dark); doc.setFontSize(8); doc.text('Si',margin+contentW-23,y+5.5);
+  // NO box
+  doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray);
+  doc.rect(margin+contentW-15,y+2,4,4,'FD');
+  if(isNoProc){ doc.setFillColor(...blue); doc.rect(margin+contentW-14.2,y+2.8,2.4,2.4,'F'); }
+  doc.setTextColor(...dark); doc.text('No',margin+contentW-10,y+5.5);
+  y+=10;
+
+  // Cause checkboxes su griglia 2 colonne
+  const causeList=[...document.querySelectorAll('.cause-item')].map(c=>({
+    label:c.querySelector('span').textContent.trim(),
+    checked:c.classList.contains('selected')
+  }));
+  const causeColW=contentW/2;
+  const causeRows=Math.ceil(causeList.length/2);
+  const causeH=causeRows*6+4;
+  doc.setDrawColor(...borderGray); doc.rect(margin,y,contentW,causeH,'S');
+  doc.setTextColor(...blue); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+  doc.text('CAUSE PRINCIPALI RILEVATE:',margin+2,y+4);
+  let cX=margin+2, cY=y+8;
+  causeList.forEach((c,i)=>{
+    if(i===Math.ceil(causeList.length/2)){cX=margin+causeColW+2; cY=y+8;}
+    // Causa inline
+    doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+    doc.rect(cX,cY-3,4,4,'FD');
+    if(c.checked){ doc.setFillColor(...red); doc.rect(cX+0.8,cY-2.2,2.4,2.4,'F'); }
+    doc.setTextColor(...dark); doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text(c.label,cX+5.5,cY);
+    cY+=6;
+  });
+  y+=causeH+2;
+
+  // NC
+  const ncVal=document.getElementById('nc_desc').value;
+  checkY(16);
+  doc.setDrawColor(...borderGray); doc.rect(margin,y,contentW,14,'S');
+  doc.setFillColor(...grayBg); doc.rect(margin,y,40,14,'F'); doc.line(margin+40,y,margin+40,y+14);
+  doc.setTextColor(...blue); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+  doc.text('NC RILEVATA:',margin+2,y+5);
+  doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+  doc.rect(margin+2,y+6,4,4,'FD');
+  if(ncVal){ doc.setFillColor(...red); doc.rect(margin+2.8,y+6.8,2.4,2.4,'F'); }
+  doc.setTextColor(...dark); doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Si - Descrizione:',margin+7.5,y+9.5);
+  doc.setTextColor(...dark); doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+  if(ncVal) doc.text(ncVal,margin+42,y+9);
+  else { doc.setTextColor(...mid); doc.text('Nessuna',margin+42,y+9); }
+  y+=16;
+
+  // ── SEZIONE 7: AZIONI CORRETTIVE ──
+  checkY(25);
+  y=sectionHeader('7 — '+t('s9').toUpperCase(),y)+1;
+  const azioniList=[...document.querySelectorAll('#ac-list textarea')].map((el,i)=>el.value.trim()?(i+1)+'. '+el.value.trim():'').filter(Boolean);
+  const azioniText=azioniList.length>0?azioniList.join('\n'):'Nessuna azione da intraprendere';
+  const azioniLines=doc.splitTextToSize(azioniText,contentW-4);
+  const azioniH=Math.max(12,azioniLines.length*4.5+4);
+  doc.setDrawColor(...borderGray); doc.rect(margin,y,contentW,azioniH,'S');
+  doc.setTextColor(...dark); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text(azioniLines,margin+2,y+5);
+  y+=azioniH+1;
+
+  // DVR / Piano emergenza
+  const dvrEl=document.querySelector('[name="dvr_agg"].selected');
+  const peEl=document.querySelector('[name="pe_agg"].selected');
+  // DVR e PE - due righe indipendenti
+  const dvrSi=!!(dvrEl&&dvrEl.querySelector('span')&&!['No','Nein','Non'].includes(dvrEl.querySelector('span').textContent.trim()));
+  const peSi=!!(peEl&&peEl.querySelector('span')&&!['No','Nein','Non'].includes(peEl.querySelector('span').textContent.trim()));
+  // Riga DVR
+  checkY(7);
+  doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+  doc.rect(margin,y,contentW,7,'S');
+  doc.setTextColor(...dark); doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Aggiornamento Valutazione dei Rischi (DVR):',margin+2,y+5);
+  // Checkbox SI
+  doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray);
+  doc.rect(margin+contentW-26,y+1.5,4,4,'FD');
+  if(dvrSi){ doc.setFillColor(...blue); doc.rect(margin+contentW-25.2,y+2.3,2.4,2.4,'F'); }
+  doc.setTextColor(...dark); doc.setFontSize(8); doc.text('Si',margin+contentW-21,y+5);
+  // Checkbox NO
+  doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray);
+  doc.rect(margin+contentW-14,y+1.5,4,4,'FD');
+  if(dvrEl&&!dvrSi){ doc.setFillColor(...blue); doc.rect(margin+contentW-13.2,y+2.3,2.4,2.4,'F'); }
+  doc.setTextColor(...dark); doc.text('No',margin+contentW-9,y+5);
+  y+=7;
+  // Riga PE
+  checkY(7);
+  doc.setDrawColor(...borderGray);
+  doc.rect(margin,y,contentW,7,'S');
+  doc.setTextColor(...dark); doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Aggiornamento Piano di emergenza ed evacuazione:',margin+2,y+5);
+  doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray);
+  doc.rect(margin+contentW-26,y+1.5,4,4,'FD');
+  if(peSi){ doc.setFillColor(...blue); doc.rect(margin+contentW-25.2,y+2.3,2.4,2.4,'F'); }
+  doc.setTextColor(...dark); doc.setFontSize(8); doc.text('Si',margin+contentW-21,y+5);
+  doc.setFillColor(255,255,255); doc.setDrawColor(...borderGray);
+  doc.rect(margin+contentW-14,y+1.5,4,4,'FD');
+  if(peEl&&!peSi){ doc.setFillColor(...blue); doc.rect(margin+contentW-13.2,y+2.3,2.4,2.4,'F'); }
+  doc.setTextColor(...dark); doc.text('No',margin+contentW-9,y+5);
+  y+=9;
+
+  // ── SEZIONE 8: RESPONSABILI + FIRME ──
+  checkY(70);
+  y=sectionHeader('8 — '+t('s10').toUpperCase(),y)+1;
+
+  // Resp. reparto | RLS
+  doc.setDrawColor(...borderGray); doc.rect(margin,y,contentW,8,'S');
+  const halfResp=(contentW-2)/2;
+  doc.setFillColor(...grayBg); doc.rect(margin,y,35,8,'F'); doc.line(margin+35,y,margin+35,y+8);
+  doc.line(margin+halfResp,y,margin+halfResp,y+8);
+  doc.setFillColor(...grayBg); doc.rect(margin+halfResp+2,y,35,8,'F'); doc.line(margin+halfResp+2+35,y,margin+halfResp+2+35,y+8);
+  doc.setTextColor(...blue); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+  doc.text('RESP. REPARTO:',margin+1,y+5.5); doc.text('RLS:',margin+halfResp+3,y+5.5);
+  doc.setTextColor(...dark); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text(document.getElementById('resp_reparto').value||'—',margin+37,y+5.5);
+  doc.text(document.getElementById('rls_nome').value||'—',margin+halfResp+38,y+5.5);
+  y+=8;
+
+  // Compilatore
+  tableRow('Segnalato da',document.getElementById('compilatore').value+' ('+document.getElementById('email').value+')',y,7);
+  y+=7;
+  const noteVal=document.getElementById('note_finali').value;
+  if(noteVal){tableRow('Note finali',noteVal,y,7);y+=7;}
+  y+=3;
+
+  // ── FOTO MINIATURE ──
+  if(fotoFiles.length>0){
+    checkY(45);
+    y=sectionHeader('FOTO ALLEGATE ('+fotoFiles.length+')',y)+2;
+    const thumbW=38, thumbH=30, thumbGap=4;
+    const loadThumb=(file,idx)=>{
+      return new Promise(resolve=>{
+        const reader=new FileReader();
+        reader.onload=e=>{
+          try{
+            const tx=margin+(thumbW+thumbGap)*idx;
+            if(tx+thumbW<=W-margin){
+              doc.setDrawColor(...borderGray); doc.rect(tx,y,thumbW,thumbH,'S');
+              doc.addImage(e.target.result,'JPEG',tx+1,y+1,thumbW-2,thumbH-6);
+              doc.setTextColor(...mid); doc.setFontSize(7);
+              doc.text('Foto '+(idx+1),tx+thumbW/2,y+thumbH-1,{align:'center'});
+            }
+          }catch(err){}
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+    // Carica le foto in modo sincrono tramite Promise.all poi salva
+    Promise.all(fotoFiles.slice(0,4).map((f,i)=>loadThumb(f,i))).then(()=>{
+      y+=thumbH+4;
+      // Firme dopo foto
+      const needH=32;
+      if(y+needH>284){ doc.addPage(); drawPageHeader(); y=28; }
+      drawSignatureSection(doc,y,contentW,margin,white,blue,mid,borderGray);
+      finalizePDF(doc,currentProto);
+    });
+    return;
+  }
+
+  // ── FIRME (se non ci sono foto) ──
+  checkY(35);
+  drawSignatureSection(doc,y,contentW,margin,white,blue,mid,borderGray);
+  finalizePDF(doc,currentProto);
+}
+
+function drawSignatureSection(doc,y,contentW,margin,white,blue,mid,borderGray){
+  const LW=0.25;
+  const halfW=(contentW-4)/2;
+  const sigBoxH=20;
+  doc.setDrawColor(...borderGray); doc.setLineWidth(LW);
+  doc.setTextColor(...blue); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('FIRMA COMPILATORE',margin,y+5);
+  doc.text('FIRMA RSPP / RESPONSABLE HSE',margin+halfW+4,y+5);
+  y+=7;
+  doc.setFillColor(...white); doc.setDrawColor(...borderGray);
+  doc.rect(margin,y,halfW,sigBoxH,'FD');
+  doc.rect(margin+halfW+4,y,halfW,sigBoxH,'FD');
+  const canvas=document.getElementById('firma-canvas');
+  const canvasRSPP=null; // firma RSPP rimossa dal form
+  function isFE(id){const c=document.getElementById(id);return!c.getContext('2d').getImageData(0,0,c.width,c.height).data.some(v=>v!==0);}
+  if(!isFE('firma-canvas')){doc.addImage(canvas.toDataURL('image/png'),'PNG',margin+1,y+1,halfW-2,sigBoxH-2);}
+  else{doc.setTextColor(180,180,180);doc.setFontSize(9);doc.setFont('helvetica','italic');doc.text('(non firmato)',margin+halfW/2,y+sigBoxH/2+1,{align:'center'});}
+  doc.setTextColor(180,180,180);doc.setFontSize(9);doc.setFont('helvetica','italic');doc.text('(da completare in ufficio)',margin+halfW+4+halfW/2,y+sigBoxH/2+1,{align:'center'});
+}
+
+function finalizePDF(doc,proto){
+  const blue=[26,74,122], white=[255,255,255], mid=[74,80,96];
+  const W=210, margin=10;
+  const totalPages=doc.internal.getNumberOfPages();
+  for(let p=1;p<=totalPages;p++){
+    doc.setPage(p);
+    doc.setFillColor(...blue); doc.rect(0,287,W,10,'F');
+    doc.setTextColor(...white); doc.setFontSize(7.5); doc.setFont('helvetica','normal');
+    doc.text('SOMEC SafeReport · MS452-01 · Somec Sintesi · HSE Department',W/2,293,{align:'center'});
+    doc.text('Pag. '+p+'/'+totalPages,W-margin,293,{align:'right'});
+  }
+  doc.save('MS452_'+proto+'.pdf');
+}
+
+// ── SUBMIT ────────────────────────────────────────
+document.getElementById('main-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  const required=this.querySelectorAll('[required]');
+  let valid=true;
+  required.forEach(el=>{
+    if(!el.value.trim()){ el.style.borderColor='#d04a1a'; if(valid) el.scrollIntoView({behavior:'smooth',block:'center'}); valid=false; }
+    else el.style.borderColor='';
+  });
+  if(!document.querySelector('.event-card.selected')){ alert(t('evNearMiss')+' — '+t('s3')); return; }
+  if(!valid){ alert('❗ Compila i campi obbligatori'); return; }
+
+  const now=new Date();
+  currentProto='MS452-'+now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'-'+String(Math.floor(Math.random()*9000)+1000);
+
+  const tipoEvento=document.querySelector('.event-card.selected .ev-label')?.textContent||'—';
+  const causeSelezionate=[...document.querySelectorAll('.cause-item.selected')].map(c=>c.querySelector('span').textContent).join(', ')||'—';
+  const partiCorpo=bodyParts.size>0?[...bodyParts].join(', '):'—';
+  const azioniAC=[...document.querySelectorAll('#ac-list textarea')].map((t,i)=>t.value.trim()?(i+1)+'. '+t.value.trim():'').filter(Boolean).join('\n')||'—';
+  const lat=document.getElementById('geo-lat').value, lng=document.getElementById('geo-lng').value;
+  const geoText=lat?lat+', '+lng+' (±'+document.getElementById('geo-acc').value+'m)':'Non rilevata';
+
+  currentParams = null; const params={
+    to_email:RSPP_EMAIL, protocollo:currentProto,
+    data_ora:document.getElementById('data').value+' ore '+document.getElementById('ora').value,
+    cantiere:getCantiereValue(),
+    area:document.getElementById('area').value,
+    macchina:document.getElementById('macchina').value||'—',
+    geo:geoText,
+    cognome:document.getElementById('cognome').value,
+    nome:document.getElementById('nome').value,
+    azienda:document.getElementById('azienda').value,
+    mansione:document.getElementById('mansione').value,
+    tipo_evento:tipoEvento,
+    descrizione:document.getElementById('descrizione').value,
+    dinamica:document.getElementById('dinamica').value||'—',
+    dinamica_det:document.getElementById('dinamica_det').value||'—',
+    parti_corpo:partiCorpo,
+    foto_num:fotoFiles.length+' foto allegate',
+    trattamento:document.getElementById('trattamento').value||'—',
+    denuncia_num:document.getElementById('denuncia_num').value||'—',
+    prognosi:document.getElementById('prognosi').value||'—',
+    cause:causeSelezionate,
+    nc_desc:document.getElementById('nc_desc').value||'—',
+    azioni_ac:azioniAC,
+    resp_reparto:document.getElementById('resp_reparto').value||'—',
+    rls_nome:document.getElementById('rls_nome').value||'—',
+    compilatore:document.getElementById('compilatore').value,
+    email_comp:document.getElementById('email').value,
+    note_finali:document.getElementById('note_finali').value||'—',
+    reply_to:document.getElementById('email').value,
+    lingua:currentLang.toUpperCase()
+  };
+
+  const btn=document.querySelector('.btn-submit');
+  btn.textContent='⏳ '+t('invia')+'...'; btn.disabled=true;
+
+  // Invio via Cloudflare Worker → Brevo
+  const _html = '<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto">'
+        +'<div style="background:#1a4a7a;padding:14px 20px;border-radius:6px 6px 0 0">'
+        +'<span style="color:white;font-size:16px;font-weight:700">🚨 SOMEC SINTESI — MS452-01 — '+params.tipo_evento+'</span></div>'
+        +'<div style="background:#f5f6f8;padding:16px 20px;border:1px solid #d0d4da;border-top:none;font-size:13px">'
+        +'<p><strong>Protocollo:</strong> '+params.protocollo+'</p>'
+        +'<p><strong>Data/Ora:</strong> '+params.data_ora+' &nbsp;|&nbsp; <strong>Cantiere:</strong> '+params.cantiere+' &nbsp;|&nbsp; <strong>Area:</strong> '+params.area+'</p>'
+        +'<p><strong>Persona:</strong> '+params.cognome+' '+params.nome+' — '+params.azienda+' — '+params.mansione+'</p>'
+        +'<hr style="border:none;border-top:1px solid #d0d4da;margin:10px 0">'
+        +'<p><strong>Tipo evento:</strong> <span style="color:#1a4a7a;font-weight:700">'+params.tipo_evento+'</span></p>'
+        +'<p><strong>Descrizione:</strong><br>'+params.descrizione+'</p>'
+        +(params.dinamica&&params.dinamica!='—'?'<p><strong>Dinamica:</strong> '+params.dinamica+(params.dinamica_det&&params.dinamica_det!='—'?' — '+params.dinamica_det:'')+'</p>':'')
+        +(params.parti_corpo&&params.parti_corpo!='—'?'<p><strong>Parti corpo:</strong> '+params.parti_corpo+'</p>':'')
+        +'<hr style="border:none;border-top:1px solid #d0d4da;margin:10px 0">'
+        +(params.trattamento&&params.trattamento!='—'?'<p><strong>Trattamento immediato:</strong> '+params.trattamento+'</p>':'')
+        +(params.denuncia_num&&params.denuncia_num!='—'?'<p><strong>N° denuncia:</strong> '+params.denuncia_num+' &nbsp;|&nbsp; <strong>Prognosi:</strong> '+params.prognosi+' gg</p>':'')
+        +'<p><strong>Cause:</strong> '+params.cause+'</p>'
+        +(params.nc_desc&&params.nc_desc!='—'?'<p><strong>NC rilevata:</strong> '+params.nc_desc+'</p>':'')
+        +(params.azioni_ac&&params.azioni_ac!='—'?'<p><strong>Azioni correttive:</strong><br>'+params.azioni_ac.replace(/\n/g,'<br>')+'</p>':'')
+        +'<hr style="border:none;border-top:1px solid #d0d4da;margin:10px 0">'
+        +'<p><strong>Resp. reparto:</strong> '+params.resp_reparto+' &nbsp;|&nbsp; <strong>RLS:</strong> '+params.rls_nome+'</p>'
+        +'<p><strong>Segnalato da:</strong> '+params.compilatore+' ('+params.reply_to+')</p>'
+        +(params.geo&&params.geo!='Non rilevata'?'<p style="color:#666;font-size:12px">📍 GPS: '+params.geo+'</p>':'')
+        +'<p style="color:#666;font-size:12px">📸 '+params.foto_num+' &nbsp;|&nbsp; 🌐 '+params.lingua+'</p>'
+        +'</div>'
+        +'<div style="background:#e8eaed;padding:8px 20px;border-radius:0 0 6px 6px;font-size:10px;color:#888">'
+        +'SOMEC SafeReport · MS452-01 · Somec Sintesi · HSE Department</div></div>';
+  // Genera PDF base64, poi invia con allegato
+  const _proto = params.protocollo;
+  const _subject = '[SOMEC SafeReport] '+params.tipo_evento+' — '+_proto;
+  const _filename = 'MS452_'+_proto+'.pdf';
+
+  function _sendWorker(attachment){
+    const body = {
+      to: (function(){
+        const userEmail = document.getElementById('email').value.trim();
+        const recipients = [{email:HSE_DIRECT},{email:HSE_CC}];
+        if(userEmail && userEmail !== HSE_DIRECT && userEmail !== HSE_CC) recipients.push({email:userEmail});
+        return recipients;
+      })(),
+      subject:_subject,
+      htmlContent:_html
+    };
+    if(attachment) body.attachment = [{content:attachment, name:_filename}];
+  currentParams = params;
+    return fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+  }
+
+  async function _pdfToB64(){
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const W=210,M=12,CW=W-2*M;
+    const BL=[26,74,122],WH=[255,255,255],GR=[245,246,248],DK=[26,30,40],GY=[180,185,192];
+    const LW=0.25;
+    let y=8;
+    // Header
+    doc.setDrawColor(...GY);doc.setLineWidth(LW);doc.rect(M,y,CW,14,'S');
+    doc.setFillColor(...WH);doc.rect(M,y,38,14,'F');
+    try{
+        const _logoEl=document.querySelector('.header-logo img');
+        const _logoCv=document.createElement('canvas');
+        const _scale=3; // 3x per nitidezza
+        const _logoImg=new Image();
+        _logoImg.src=_logoEl.src;
+        _logoCv.width=_logoImg.naturalWidth||340;
+        _logoCv.height=_logoImg.naturalHeight||110;
+        const _logoCtx=_logoCv.getContext('2d');
+        _logoCtx.drawImage(_logoImg,0,0);
+        doc.addImage(_logoCv.toDataURL('image/png'),'PNG',M+1,y+1,34,11);
+      }catch(e){}
+    doc.line(M+38,y,M+38,y+22);
+    doc.setTextColor(...DK);doc.setFontSize(11);doc.setFont('helvetica','bold');
+    doc.text('MODULO SICUREZZA',M+80,y+8,{align:'center'});
+    doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(...[74,80,96]);
+    doc.text(t('titolo'),M+80,y+13,{align:'center'});
+    const nx=M+38+CW*0.56;doc.line(nx,y,nx,y+14);
+    doc.setFontSize(9);doc.setTextColor(...BL);doc.setFont('helvetica','bold');doc.text('MS452-01',nx+2,y+9);
+    doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...[74,80,96]);doc.text('Rev.02',nx+2,y+13);
+    y+=18;
+    // Protocollo + evento
+    doc.setFillColor(232,240,250);doc.setDrawColor(...BL);doc.setLineWidth(0.4);doc.rect(M,y,CW,8,'FD');
+    doc.setTextColor(...BL);doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Protocollo: '+params.protocollo,M+2,y+6);
+    doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(...[74,80,96]);doc.text(new Date().toLocaleString('it-IT'),W-M,y+6,{align:'right'});
+    doc.setLineWidth(LW);y+=10;
+    const evEl=document.querySelector('.event-card.selected .ev-label');
+    const evTxt=evEl?evEl.textContent.trim().toUpperCase():'—';
+    const isInf=!!evTxt.match(/INFORT|ACCIDENT|UNFALL/);
+    doc.setFillColor(...(isInf?[192,57,43]:BL));doc.rect(M,y,CW,7,'F');
+    doc.setTextColor(...WH);doc.setFontSize(10);doc.setFont('helvetica','bold');
+    doc.text('TIPO EVENTO: '+evTxt,W/2,y+5.5,{align:'center'});y+=9;
+    function rw(lbl,val,ry){
+      doc.setDrawColor(...GY);doc.setLineWidth(LW);doc.rect(M,ry,CW,7,'S');
+      doc.setFillColor(...GR);doc.rect(M,ry,46,7,'F');doc.line(M+46,ry,M+46,ry+7);
+      doc.setTextColor(...BL);doc.setFontSize(7);doc.setFont('helvetica','bold');doc.text(lbl.toUpperCase()+':',M+1,ry+5);
+      doc.setTextColor(...DK);doc.setFont('helvetica','normal');doc.setFontSize(9);
+      const ls=doc.splitTextToSize(String(val||'—'),CW-49);doc.text(ls,M+48,ry+5);
+      return ry+7;
+    }
+    function sec(ttl,sy){
+      doc.setFillColor(...BL);doc.rect(M,sy,CW,6,'F');
+      doc.setTextColor(...WH);doc.setFontSize(8);doc.setFont('helvetica','bold');
+      doc.text(ttl.toUpperCase(),M+2,sy+4.5);return sy+7;
+    }
+    y=sec('1 — Data, Ora e Luogo',y);
+    y=rw('Data / Ora',document.getElementById('data').value+' ore '+document.getElementById('ora').value,y);
+    y=rw('Cantiere / Sito',getCantiereValue(),y);
+    y=rw('Area / Reparto',document.getElementById('area').value,y);
+    const mac=document.getElementById('macchina').value;if(mac)y=rw('Macchina',mac,y);
+    const lat=document.getElementById('geo-lat').value,lng=document.getElementById('geo-lng').value,acc=document.getElementById('geo-acc').value;
+    if(lat)y=rw('GPS',lat+', '+lng+(acc?' (±'+acc+'m)':''),y);
+    y+=2;
+    y=sec('2 — Persona Coinvolta',y);
+    y=rw('Nominativo',document.getElementById('cognome').value+' '+document.getElementById('nome').value,y);
+    y=rw('Azienda / Mansione',document.getElementById('azienda').value+' — '+document.getElementById('mansione').value,y);
+    const alt=document.getElementById('altri').value;if(alt)y=rw('Altri presenti',alt,y);
+    y+=2;
+    y=sec('3 — Descrizione e Cause',y);
+    const desc=document.getElementById('descrizione').value||'—';
+    const dL=doc.splitTextToSize(desc,CW-4);const dH=Math.max(12,dL.length*4.5+4);
+    doc.setDrawColor(...GY);doc.rect(M,y,CW,dH,'S');
+    doc.setTextColor(...DK);doc.setFontSize(9);doc.setFont('helvetica','normal');doc.text(dL,M+2,y+5);
+    y+=dH+2;
+    const din=document.getElementById('dinamica').value;if(din&&din!='')y=rw('Dinamica',din,y);
+    if(bodyParts&&bodyParts.size>0)y=rw('Parti corpo',[...bodyParts].join(', '),y);
+    const cause=[...document.querySelectorAll('.cause-item.selected')].map(c=>c.querySelector('span').textContent).join(', ');
+    if(cause)y=rw('Cause',cause,y);
+    const nc=document.getElementById('nc_desc').value;if(nc)y=rw('NC rilevata',nc,y);
+    y+=2;
+    y=sec('4 — Trattamento e Azioni',y);
+    const tratt=document.getElementById('trattamento').value;if(tratt)y=rw('Trattamento immediato',tratt,y);
+    const den=document.getElementById('denuncia_num').value;if(den)y=rw('N° denuncia',den,y);
+    const prog=document.getElementById('prognosi').value;if(prog)y=rw('Prognosi (gg)',prog,y);
+    const az=[...document.querySelectorAll('#ac-list textarea')].map((el,i)=>el.value.trim()?(i+1)+'. '+el.value.trim():'').filter(Boolean).join(' | ');
+    if(az)y=rw('Azioni correttive',az,y);
+    y+=2;
+    y=sec('5 — Responsabili',y);
+    y=rw('Resp. reparto / RLS',(document.getElementById('resp_reparto').value||'—')+' / '+(document.getElementById('rls_nome').value||'—'),y);
+    y=rw('Segnalato da',document.getElementById('compilatore').value+' ('+document.getElementById('email').value+')',y);
+    const note=document.getElementById('note_finali').value;if(note)y=rw('Note',note,y);
+    y+=5;
+    // Firme
+    const hW=(CW-4)/2;
+    doc.setTextColor(...BL);doc.setFontSize(8);doc.setFont('helvetica','bold');
+    doc.text('FIRMA COMPILATORE',M,y+4);
+    doc.text('FIRMA RSPP / RESPONSABLE HSE',M+hW+4,y+4);y+=6;
+    doc.setDrawColor(...GY);doc.rect(M,y,hW,20,'S');doc.rect(M+hW+4,y,hW,20,'S');
+    function fV(id){const c=document.getElementById(id);return!c.getContext('2d').getImageData(0,0,c.width,c.height).data.some(v=>v!==0);}
+    if(!fV('firma-canvas'))doc.addImage(document.getElementById('firma-canvas').toDataURL(),'PNG',M+1,y+1,hW-2,18);
+    else{doc.setTextColor(180,180,180);doc.setFontSize(9);doc.setFont('helvetica','italic');doc.text('(non firmato)',M+hW/2,y+11,{align:'center'});}
+    doc.setTextColor(180,180,180);doc.setFontSize(9);doc.setFont('helvetica','italic');doc.text('(da completare in ufficio)',M+hW+4+hW/2,y+11,{align:'center'});
+    // Foto su pagina separata
+    if(fotoFiles&&fotoFiles.length>0){
+      doc.addPage();y=20;
+      doc.setFillColor(...BL);doc.rect(M,y,CW,6,'F');
+      doc.setTextColor(...WH);doc.setFontSize(8);doc.setFont('helvetica','bold');
+      doc.text('FOTO ALLEGATE ('+fotoFiles.length+')',M+2,y+4.5);y+=8;
+      await Promise.all(fotoFiles.slice(0,4).map((f,i)=>new Promise(res=>{
+        const r=new FileReader();
+        r.onload=e=>{
+          try{
+            const tW=38,tH=30,tG=3;
+            // Corregge orientamento EXIF tramite canvas
+            const img=new Image();
+            img.onload=()=>{
+              // Legge orientamento EXIF dai bytes raw
+              let orient=1;
+              try{
+                const view=new DataView(r.result instanceof ArrayBuffer?r.result:new ArrayBuffer(0));
+                // Cerca marker EXIF (0xFFE1) nei primi 64KB
+                const bytes=new Uint8Array(typeof e.target.result==='string'?new ArrayBuffer(0):e.target.result);
+              }catch(ex){}
+              // Usa canvas per normalizzare l'immagine (il browser applica CSS orientation)
+              const cv=document.createElement('canvas');
+              cv.width=img.naturalWidth; cv.height=img.naturalHeight;
+              const ctx=cv.getContext('2d');
+              ctx.drawImage(img,0,0);
+              const dataUrl=cv.toDataURL('image/jpeg',0.85);
+              doc.setDrawColor(...GY);doc.rect(M+(tW+tG)*i,y,tW,tH,'S');
+              doc.addImage(dataUrl,'JPEG',M+(tW+tG)*i+1,y+1,tW-2,tH-5);
+              doc.setTextColor(...[74,80,96]);doc.setFontSize(7);
+              doc.text('Foto '+(i+1),M+(tW+tG)*i+tW/2,y+tH-1,{align:'center'});
+              res();
+            };
+            img.onerror=()=>res();
+            img.src=e.target.result;
+          }catch(e2){res();}
+        };
+        r.readAsDataURL(f);
+      })));
+    }
+    // Footer su ogni pagina
+    const tot=doc.internal.getNumberOfPages();
+    for(let p=1;p<=tot;p++){
+      doc.setPage(p);doc.setFillColor(...BL);doc.rect(0,287,W,10,'F');
+      doc.setTextColor(...WH);doc.setFontSize(7.5);doc.setFont('helvetica','normal');
+      doc.text('SOMEC SafeReport · MS452-01 · Somec Sintesi · HSE Department',W/2,293,{align:'center'});
+      doc.text('Pag. '+p+'/'+tot,W-M,293,{align:'right'});
+    }
+    return doc.output('datauristring').split(',')[1];
+  }
+
+    // Prova con PDF, fallback senza
+  _pdfToB64()
+    .then(b64=>_sendWorker(b64))
+    .catch(()=>_sendWorker(null))
+    .then(resp=>{ if(resp&&resp.ok) showSuccess(false); else showSuccess(true); })
+    .catch(()=>showSuccess(true))
+    .finally(()=>{ btn.innerHTML='📤 <span>'+t('invia')+'</span>'; btn.disabled=false; });
+});
+
+function showSuccess(withWarning=false){
+  document.getElementById('main-form').style.display='none';
+  document.getElementById('success-screen').style.display='block';
+  document.getElementById('ticket-num').textContent='Protocollo: '+currentProto+(withWarning?' ⚠️':'');
+  document.getElementById('progress').style.width='100%';
+  if(!localStorage.getItem('ms452_first_date')) localStorage.setItem('ms452_first_date', new Date().toLocaleDateString());
+  incCounter();
+  localStorage.removeItem(DRAFT_KEY);
+  window.scrollTo({top:0,behavior:'smooth'});
+  applyTranslations();
+  // Salva su Firebase in background
+  if(currentParams) {
+    const tipoEvento = document.querySelector('.event-card.selected .ev-label')?.textContent||'';
+    const cause = [...document.querySelectorAll('.cause-item.selected')].map(c=>c.querySelector('span')?.textContent||'').join(', ');
+    saveSafereportToFirebase(currentParams, tipoEvento, cause);
+    currentParams = null; // reset dopo il salvataggio
+  }
+}
+
+function resetForm(){
+  document.getElementById('main-form').reset();
+  document.getElementById('main-form').style.display='block';
+  document.getElementById('success-screen').style.display='none';
+  document.getElementById('progress').style.width='0%';
+  document.querySelectorAll('.event-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.sino-item').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.cause-item').forEach(c=>c.classList.remove('selected'));
+  bodyParts.clear(); renderBodyTags();
+  document.querySelectorAll('#body-svg .bp').forEach(g=>{
+    g.querySelectorAll('ellipse,rect').forEach(s=>s.setAttribute('fill','#e8f0fa'));
+    g.querySelectorAll('text').forEach(t=>t.setAttribute('fill','#1a4a7a'));
+  });
+  fotoFiles.length=0; document.getElementById('foto-previews').innerHTML=''; document.getElementById('foto-count').textContent='';
+  clearFirma('firma-canvas');
+  document.getElementById('infortuni-extra').classList.remove('show');
+  const now=new Date();
+  document.getElementById('data').value=now.toISOString().split('T')[0];
+  document.getElementById('ora').value=now.toTimeString().slice(0,5);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── INIT ─────────────────────────────────────────
+window.addEventListener('load', ()=>{
+  const lang = detectLang();
+  setLang(lang);
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active', b.textContent.includes(lang.toUpperCase())));
+
+  const now=new Date();
+  document.getElementById('data').value=now.toISOString().split('T')[0];
+  document.getElementById('ora').value=now.toTimeString().slice(0,5);
+
+  initCanvas('firma-canvas');
+  updateCounterDisplay();
+
+  const draft=loadDraft();
+  if(draft && draft.compilatore){
+    document.getElementById('draft-banner').style.display='flex';
+  }
+});
+
+window.addEventListener('resize',()=>{
+  ['firma-canvas'].forEach(id=>{
+    const c=document.getElementById(id);
+    if(c){ const img=c.toDataURL(); c.width=c.offsetWidth||600; const ctx=c.getContext('2d'); const i=new Image(); i.onload=()=>ctx.drawImage(i,0,0); i.src=img; }
+  });
+});
+</script>
+</body>
+</html>
