@@ -8,6 +8,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SOMEC Sintesi SafeReport — MS452-01</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  // Fallback: se jsPDF non si carica dal primo CDN (rete aziendale, firewall, momentanea indisponibilita),
+  // lo ricarica automaticamente da un secondo provider, senza bisogno di ricaricare la pagina.
+  window.addEventListener('load', function(){
+    if (!window.jspdf) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
+      document.head.appendChild(s);
+    }
+  });
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
@@ -1021,6 +1032,10 @@ document.querySelectorAll('input,select,textarea').forEach(el=>el.addEventListen
 
 // ── PDF GENERATION ───────────────────────────────
 function generatePDF(){
+  if (!window.jspdf) {
+    alert('⏳ La libreria per generare il PDF non è ancora pronta (probabile connessione lenta o rete che blocca il caricamento). Attendi qualche secondo e riprova. Se il problema persiste, prova a ricaricare la pagina (tasto aggiorna del browser).');
+    throw new Error('jsPDF non disponibile');
+  }
   const {jsPDF} = window.jspdf;
   const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const blue=[26,74,122], white=[255,255,255], grayBg=[245,246,248], dark=[26,30,40],
